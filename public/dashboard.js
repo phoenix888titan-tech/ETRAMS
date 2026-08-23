@@ -125,12 +125,19 @@ function initMap() {
     maxBounds: fullBounds,
     maxBoundsViscosity: 1.0,
     zoomControl: true,
-    scrollWheelZoom: true
+    scrollWheelZoom: true,
+    minZoom: -5
   });
 
   // Clean map view with uploaded image (no markers or polygon overlays)
   L.imageOverlay(mapImageUrl, fullBounds, { opacity: 1.0 }).addTo(map);
   map.fitBounds(fullBounds);
+  
+  // Ensure map stays fitted when the window resizes
+  window.addEventListener('resize', () => {
+    map.invalidateSize();
+    map.fitBounds(fullBounds);
+  });
 }
 
 function toggleMapLayers() {
