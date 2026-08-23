@@ -131,12 +131,17 @@ function initMap() {
 
   // Clean map view with uploaded image (no markers or polygon overlays)
   L.imageOverlay(mapImageUrl, fullBounds, { opacity: 1.0 }).addTo(map);
-  map.fitBounds(fullBounds);
+  
+  // Ensure the map container is fully rendered before fitting bounds
+  setTimeout(() => {
+    map.invalidateSize();
+    map.fitBounds(fullBounds, { padding: [0,0] });
+  }, 100);
   
   // Ensure map stays fitted when the window resizes
   window.addEventListener('resize', () => {
     map.invalidateSize();
-    map.fitBounds(fullBounds);
+    map.fitBounds(fullBounds, { padding: [0,0] });
   });
 }
 

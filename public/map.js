@@ -26,7 +26,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     bounds: bounds,
     maxBounds: bounds,
     maxBoundsViscosity: 1.0,
-    zoomControl: false,
+    zoomControl: true,
+    minZoom: -5,
     attributionControl: false,
     scrollWheelZoom: true,
     doubleClickZoom: true,
@@ -37,10 +38,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Render ONLY the uploaded image in Leaflet plugin (no markers, no button controls)
   L.imageOverlay(mapImageUrl, bounds, { opacity: 1.0 }).addTo(map);
-  map.fitBounds(bounds);
+  
+  setTimeout(() => {
+    map.invalidateSize();
+    map.fitBounds(bounds, { padding: [0,0] });
+  }, 100);
 
   window.addEventListener('resize', () => {
     map.invalidateSize();
-    map.fitBounds(bounds);
+    map.fitBounds(bounds, { padding: [0,0] });
   });
 });
