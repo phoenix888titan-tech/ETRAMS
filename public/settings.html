@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eTRAMS - System Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            page: '#B5BBC7',
+            card: '#F0F4F8',
+            sidebar: '#192337',
+            primary: '#3B82F6',
+            'primary-dark': '#1E40AF',
+            'text-primary': '#1F2937',
+            'text-secondary': '#6B7280'
+          },
+          fontFamily: {
+            inter: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="settings.css" />
+</head>
+<body class="font-inter bg-page text-text-primary">
+  <div id="root"></div>
+  <script src="auth.js"></script>
+  <script src="sidebar.js"></script>
+  <script type="module" src="settings.js"></script>
+</body>
+</html>

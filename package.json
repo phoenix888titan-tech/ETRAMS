@@ -1,0 +1,25 @@
+{
+  "name": "etrams-admin-dashboard",
+  "version": "1.0.0",
+  "description": "eTRAMS Energy Management System - Admin Meter Dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node database/seed.js",
+    "schema": "mysql -u root -p etrams < database/schema.sql"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "mysql2": "^3.9.1"
+  },
+  "keywords": [
+    "energy",
+    "dashboard",
+    "mysql",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT"
+}

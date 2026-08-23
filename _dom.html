@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>eTRAMS - System Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            page: '#B5BBC7',
+            card: '#F0F4F8',
+            sidebar: '#192337',
+            primary: '#3B82F6',
+            'primary-dark': '#1E40AF',
+            'text-primary': '#1F2937',
+            'text-secondary': '#6B7280'
+          },
+          fontFamily: {
+            inter: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="settings.css">
+<script>
+  window.__errs = [];
+  function pushErr(m) {
+    window.__errs.push(String(m));
+    var el = document.getElementById("errlog");
+    if (!el) { el = document.createElement("pre"); el.id = "errlog"; (document.body || document.documentElement).appendChild(el); }
+    el.textContent = window.__errs.join("\n---\n");
+  }
+  window.addEventListener("error", function (e) { pushErr("onerror: " + e.message + " @ " + (e.filename || "") + ":" + (e.lineno || "")); });
+  window.addEventListener("unhandledrejection", function (e) { pushErr("unhandledrejection: " + ((e.reason && (e.reason.stack || e.reason.message)) || e.reason)); });
+  var origErr = console.error;
+  console.error = function () {
+    var parts = [];
+    for (var i = 0; i < arguments.length; i++) { var a = arguments[i]; parts.push((a && (a.stack || a.message)) || String(a)); }
+    pushErr("console.error: " + parts.join(" "));
+    origErr.apply(console, arguments);
+  };
+  window.addEventListener("load", function () {
+    setTimeout(function () {
+      pushErr("no-error-marker");
+      var btns = Array.prototype.slice.call(document.querySelectorAll(".tab-btn"));
+      var grid = btns.find(function (b) { return b.textContent.trim() === "Grid"; });
+      if (grid) { grid.click(); pushErr("clicked Grid tab"); } else { pushErr("Grid tab button not found"); }
+      setTimeout(function () { pushErr("dump-ready"); }, 2000);
+    }, 2500);
+  });
+</script>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.bg-page{--tw-bg-opacity:1;background-color:rgb(181 187 199 / var(--tw-bg-opacity, 1))}.font-inter{font-family:Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif}.text-text-primary{--tw-text-opacity:1;color:rgb(31 41 55 / var(--tw-text-opacity, 1))}</style></head>
+<body class="font-inter bg-page text-text-primary">
+  <div id="root"></div>
+  <script type="module" src="settings.js"></script>
+
+
+<pre id="errlog">no-error-marker
+---
+clicked Grid tab
+---
+console.error: Error: Minified React error #62; visit https://reactjs.org/docs/error-decoder.html?invariant=62 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at Dl (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:7:8154)
+    at lf (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:17537)
+    at ua (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39889)
+    at ia (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39779)
+    at df (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39649)
+    at Ir (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39508)
+    at di (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:35897)
+    at ta (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:34851)
+    at F (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2068)
+    at E (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2427)
+---
+console.error: Error: Minified React error #62; visit https://reactjs.org/docs/error-decoder.html?invariant=62 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at Dl (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:7:8154)
+    at lf (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:17537)
+    at ua (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39889)
+    at ia (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39779)
+    at df (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39649)
+    at Ir (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39508)
+    at di (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:35897)
+    at ta (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:34851)
+    at F (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2068)
+    at E (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2427)
+---
+console.error: Error: Minified React error #62; visit https://reactjs.org/docs/error-decoder.html?invariant=62 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at Dl (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:7:8154)
+    at lf (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:17537)
+    at ua (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39889)
+    at ia (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39779)
+    at df (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39649)
+    at Ir (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39508)
+    at di (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:35897)
+    at ta (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:34851)
+    at F (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2068)
+    at E (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2427)
+---
+console.error: Error: Minified React error #62; visit https://reactjs.org/docs/error-decoder.html?invariant=62 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at Dl (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:7:8154)
+    at lf (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:17537)
+    at ua (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39889)
+    at ia (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39779)
+    at df (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39649)
+    at Ir (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39508)
+    at di (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:35897)
+    at ta (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:34851)
+    at F (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2068)
+    at E (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2427)
+---
+console.error: Error: Minified React error #62; visit https://reactjs.org/docs/error-decoder.html?invariant=62 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at Dl (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:7:8154)
+    at lf (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:17537)
+    at ua (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39889)
+    at ia (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39779)
+    at df (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39649)
+    at Ir (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39508)
+    at di (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:35897)
+    at ta (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:34851)
+    at F (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2068)
+    at E (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2427)
+---
+console.error: Error: Minified React error #62; visit https://reactjs.org/docs/error-decoder.html?invariant=62 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at Dl (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:7:8154)
+    at lf (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:17537)
+    at ua (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39889)
+    at ia (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39779)
+    at df (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39649)
+    at Ir (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39508)
+    at di (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:35897)
+    at ta (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:34851)
+    at F (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2068)
+    at E (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2427)
+---
+console.error: Error: Minified React error #62; visit https://reactjs.org/docs/error-decoder.html?invariant=62 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at Dl (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:7:8154)
+    at lf (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:17537)
+    at ua (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39889)
+    at ia (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39779)
+    at df (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39649)
+    at Ir (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39508)
+    at di (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:35897)
+    at ta (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:34851)
+    at F (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2068)
+    at E (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2427)
+---
+console.error: Error: Minified React error #62; visit https://reactjs.org/docs/error-decoder.html?invariant=62 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at Dl (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:7:8154)
+    at lf (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:17537)
+    at ua (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39889)
+    at ia (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39779)
+    at df (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39649)
+    at Ir (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39508)
+    at di (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:35897)
+    at ta (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:34851)
+    at F (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2068)
+    at E (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2427)
+---
+console.error: Error: Minified React error #62; visit https://reactjs.org/docs/error-decoder.html?invariant=62 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at Dl (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:7:8154)
+    at lf (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:17537)
+    at ua (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39889)
+    at ia (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39779)
+    at df (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39649)
+    at Ir (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:39508)
+    at di (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:35897)
+    at ta (https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10:34851)
+    at F (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2068)
+    at E (https://esm.sh/scheduler@0.23.2/es2022/scheduler.mjs:3:2427)
+---
+onerror: Uncaught Error: Minified React error #62; visit https://reactjs.org/docs/error-decoder.html?invariant=62 for the full message or use the non-minified dev environment for full errors and additional helpful warnings. @ https://esm.sh/react-dom@18.2.0/es2022/react-dom.mjs:10
+---
+dump-ready</pre></body></html>

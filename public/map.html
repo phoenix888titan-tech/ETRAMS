@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eTRAMS - Campus Map View</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="map.css" />
+</head>
+<body>
+  <!-- App Header Bar -->
+  <header class="AppHeader" id="AppHeader">
+    <div class="header-left">
+      <div class="brand">
+        <img src="etrams.jpg" alt="eTRAMS logo" class="header-logo-img" />
+      </div>
+      <h1 class="header-title">
+        e<span class="highlight">N</span>ERGY <span class="spaced">Technical Reporting</span> <span class="highlight-letters">A</span>nalysis <span class="highlight-letters">M</span>anagement <span class="highlight-letters">S</span>ystem
+      </h1>
+    </div>
+    <div class="header-right" style="display:flex;align-items:center;gap:12px;">
+      <a href="/index.html" class="btn-control-panel-link" id="btn-control-panel">
+        <svg viewBox="0 0 24 24" fill="none" width="16" height="16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        Control Panel
+      </a>
+      <div class="etrams-header-user">
+        <span class="etrams-username" id="etrams-username">Admin</span>
+        <button class="etrams-logout-btn" id="btn-logout">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout" style="display:flex; width:100%;">
+    <etrams-sidebar active="btn-nav-map"></etrams-sidebar>
+    <main class="map-main" style="flex:1; min-width:0;">
+      <div id="full-campus-map" class="full-campus-map"></div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="auth.js"></script>
+  <script src="sidebar.js"></script>
+  <script src="map.js"></script>
+</body>
+</html>

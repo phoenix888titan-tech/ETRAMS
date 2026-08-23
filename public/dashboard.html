@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ADMU Energy Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="dashboard.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <!-- SECTION 1: Top Navigation Bar -->
+  <header class="HeaderNav" id="HeaderNav">
+    <div class="nav-left">
+      <div class="logo">
+        <img src="etrams.jpg" alt="eTRAMS logo" class="header-logo-img" />
+      </div>
+      <button class="control-panel-btn" id="btn-control-panel">Control Panel</button>
+      <h1 class="nav-title">ADMU Energy Management System</h1>
+    </div>
+    <div class="nav-right">
+      <div class="search-box-container">
+        <input type="text" id="search-grids" placeholder="Search grids..." autocomplete="off" />
+        <div id="search-dropdown" class="search-dropdown hidden"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout" style="display:flex; width:100%;">
+    <!-- SECTION 2: Main Dashboard Grid -->
+    <main class="DashboardGrid" id="DashboardGrid" style="flex:1; min-width:0;">
+      <!-- SECTION 3: Weather Widget Panel -->
+      <section class="WeatherWidget" id="WeatherWidget">
+        <div class="weather-header">
+          <div class="weather-main">
+            <div class="location">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 10C21 17 12 23 12 23S3 17 3 10C3 5.02944 7.02944 1 12 1S21 5.02944 21 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Q.CITY</span>
+            </div>
+            <div class="weather-date">TUE, JUL 28</div>
+            <div class="weather-time">19:50</div>
+            <div class="weather-condition">CLOUDY</div>
+            <div class="weather-meta">
+              <span>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                12 km/h
+              </span>
+              <span class="meta-separator">•</span>
+              <span>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2.69L17.66 8.35C19.87 10.56 19.87 14.11 17.66 16.32C15.45 18.53 11.9 18.53 9.69 16.32L12 14V2.69Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                65%
+              </span>
+            </div>
+          </div>
+          <div class="weather-temp">
+            <svg class="temp-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>+20°C</span>
+          </div>
+        </div>
+        <div class="weather-forecast">
+          <div class="forecast-day">
+            <div class="day-label">SUN</div>
+            <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="5" fill="currentColor"/>
+              <path d="M12 1V3M12 21V23M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M1 12H3M21 12H23M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div class="day-high">18°C</div>
+            <div class="day-low">8°C</div>
+          </div>
+          <div class="forecast-day">
+            <div class="day-label">MON</div>
+            <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="day-high">19°C</div>
+            <div class="day-low">9°C</div>
+          </div>
+          <div class="forecast-day">
+            <div class="day-label">TUE</div>
+            <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="day-high">20°C</div>
+            <div class="day-low">10°C</div>
+          </div>
+          <div class="forecast-day">
+            <div class="day-label">WED</div>
+            <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 9 19.9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16 14v6M16 14l-3 3M16 14l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="day-high">17°C</div>
+            <div class="day-low">11°C</div>
+          </div>
+          <div class="forecast-day">
+            <div class="day-label">THU</div>
+            <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="5" fill="currentColor"/>
+              <path d="M12 1V3M12 21V23M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M1 12H3M21 12H23M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div class="day-high">21°C</div>
+            <div class="day-low">12°C</div>
+          </div>
+          <div class="forecast-day">
+            <div class="day-label">FRI</div>
+            <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="day-high">20°C</div>
+            <div class="day-low">10°C</div>
+          </div>
+          <div class="forecast-day">
+            <div class="day-label">SAT</div>
+            <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="5" fill="currentColor"/>
+              <path d="M12 1V3M12 21V23M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M1 12H3M21 12H23M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div class="day-high">22°C</div>
+            <div class="day-low">13°C</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: Campus Energy Map Panel -->
+      <section class="CampusMapPanel" id="CampusMapPanel">
+        <div class="map-wrapper">
+          <button class="map-layer-btn" id="btn-map-layers" title="Toggle Grid Layers">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="1 6 1 14 12 19 23 14 23 6 12 1 1 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="1 6 12 11 23 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="12" y1="11" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button class="map-fullscreen-btn" id="btn-map-fullscreen" title="Fullscreen Map">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div id="campus-map" class="campus-map"></div>
+        </div>
+        <button class="btn-grid-details" id="btn-grid-details">View Grid Details</button>
+      </section>
+
+      <!-- SECTION 5: Grid Active Energy Demand Panel -->
+      <section class="EnergyDemandChart" id="EnergyDemandChart">
+        <div class="card-header">
+          <h2 class="card-title">Grid Active Energy Demand</h2>
+          <button class="icon-btn export-btn" id="btn-export-donut" title="Download Chart PNG">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="demand-legend">
+          <div class="legend-row"><span class="legend-dot" style="background:#E67E22"></span>KATIPUNAN GRID (LOOP 1)</div>
+          <div class="legend-row"><span class="legend-dot" style="background:#E74C3C"></span>KATIPUNAN GRID (LOOP 2)</div>
+          <div class="legend-row"><span class="legend-dot" style="background:#F1C40F"></span>KATIPUNAN GRID (LOOP 3)</div>
+          <div class="legend-row"><span class="legend-dot" style="background:#2ECC71"></span>BARANGKA GRID</div>
+          <div class="legend-row"><span class="legend-dot" style="background:#5DADE2"></span>BALARA GRID</div>
+          <div class="legend-row"><span class="legend-dot" style="background:#9B59B6"></span>ROCK WELL</div>
+        </div>
+        <div class="chart-container">
+          <canvas id="donutChart"></canvas>
+        </div>
+      </section>
+
+      <!-- SECTION 6: Monthly Grid Energy Demand Panel -->
+      <section class="MonthlyDemandChart" id="MonthlyDemandChart">
+        <div class="card-header">
+          <h2 class="card-title">Monthly Grid Energy Demand</h2>
+          <div class="chart-controls">
+            <select class="filter-dropdown" id="select-chart-year" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; font-weight: 500; background: #fff; cursor: pointer;">
+              <option value="2025">Year 2025</option>
+              <option value="2026" selected>Year 2026</option>
+              <option value="2027">Year 2027</option>
+            </select>
+            <select class="filter-dropdown" id="btn-chart-filter">
+              <option value="all">All Grids</option>
+              <option value="katipunan1">Katipunan Loop 1</option>
+              <option value="katipunan2">Katipunan Loop 2</option>
+              <option value="katipunan3">Katipunan Loop 3</option>
+              <option value="barangka">Barangka</option>
+              <option value="balara">Balara</option>
+              <option value="rockwell">Rock Well</option>
+            </select>
+            <button class="icon-btn export-btn" id="btn-export-chart" title="Export PNG">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="chart-container bar-chart-container">
+          <canvas id="barChart"></canvas>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="auth.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

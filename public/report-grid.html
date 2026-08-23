@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eTRAMS - Grid Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <!-- App Header -->
+  <header class="AppHeader" id="AppHeader">
+    <div class="header-left">
+      <div class="brand">
+        <img src="etrams.jpg" alt="eTRAMS logo" class="header-logo-img" />
+      </div>
+      <h1 class="header-title">
+        e<span class="highlight">N</span>ERGY <span class="spaced">Technical Reporting</span> <span class="highlight-letters">A</span>nalysis <span class="highlight-letters">M</span>anagement <span class="highlight-letters">S</span>ystem
+      </h1>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Sidebar Navigation -->
+    <etrams-sidebar active="btn-nav-report-grid"></etrams-sidebar>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <section class="PageHeader" id="PageHeader">
+        <h2 class="page-title" id="page-section-title">Grid Demand Report</h2>
+        <div class="page-actions">
+          <button class="btn btn-primary" id="btn-download-csv">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Download CSV
+          </button>
+          <button class="btn btn-secondary" id="btn-export-pdf">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="10 9 9 9 8 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Export PDF
+          </button>
+        </div>
+      </section>
+
+      <!-- Filter Control Bar -->
+      <section class="FilterControlBar" id="FilterControlBar">
+        <div class="filter-group">
+          <label for="filter-grid">SELECT GRID</label>
+          <select id="filter-grid"></select>
+        </div>
+        <div class="filter-group">
+          <label for="filter-start-time">START TIME & DATE</label>
+          <input type="datetime-local" id="filter-start-time" value="2026-06-10T12:00" />
+        </div>
+        <div class="filter-group">
+          <label for="filter-end-time">END TIME & DATE</label>
+          <input type="datetime-local" id="filter-end-time" value="2026-06-13T17:00" />
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-text" id="btn-reset-filters">Reset</button>
+        </div>
+      </section>
+
+      <!-- Selected Summary Banner -->
+      <div class="summary-banner" style="background:#eff6ff; border:1px solid #bfdbfe; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-size:14px; color:#1e40af;">
+        <div><strong>Selected Grid:</strong> <span id="out-selected-grid">Katipunan Grid (Loop 1)</span></div>
+        <div><strong>Start Time & Date:</strong> <span id="out-start-time">June 10, 2026 , 12:00 pm</span></div>
+        <div><strong>End Time & Date:</strong> <span id="out-end-time">June 13, 2026 , 5:00 pm</span></div>
+      </div>
+
+      <!-- Data Table -->
+      <section class="MeterDataTable" id="MeterDataTable">
+        <div class="table-card">
+          <div class="table-title">Grid Buildings Demand Report</div>
+          <div class="table-wrapper">
+            <table id="meters-table">
+              <thead>
+                <tr>
+                  <th>GRID NAME</th>
+                  <th class="numeric">PREVIOUS KW READING</th>
+                  <th class="numeric">CURRENT KW READING</th>
+                  <th class="numeric">TOTAL KW</th>
+                </tr>
+              </thead>
+              <tbody id="meters-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="sidebar.js"></script>
+  <script src="report-grid.js"></script>
+</body>
+</html>

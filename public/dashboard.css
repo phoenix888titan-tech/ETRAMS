@@ -1,0 +1,898 @@
+:root {
+  --navbar-bg: #5686C0;
+  --page-bg: #BECFE3;
+  --card-bg: #FFFFFF;
+  --orange: #E67E22;
+  --red: #E74C3C;
+  --yellow: #F1C40F;
+  --green: #2ECC71;
+  --light-blue: #5DADE2;
+  --purple: #9B59B6;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --border: #E0E0E0;
+  --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  --radius: 12px;
+  --gap: 24px;
+  --card-padding: 20px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--page-bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--navbar-bg);
+  outline-offset: 2px;
+}
+
+/* SECTION 1: HeaderNav */
+.HeaderNav {
+  background: var(--navbar-bg);
+  height: 64px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 2000;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.logo img, .header-logo-img {
+  height: 40px;
+  width: auto;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.control-panel-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.nav-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Search Box & Dropdown */
+.search-box-container {
+  position: relative;
+  width: 220px;
+}
+
+#search-grids {
+  width: 100%;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  color: #1F2937;
+  outline: none;
+}
+
+#search-grids:focus {
+  background: #FFFFFF;
+  border-color: #FFFFFF;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 2500;
+}
+
+.search-dropdown.hidden {
+  display: none;
+}
+
+.dropdown-item {
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s ease;
+}
+
+.dropdown-item:hover {
+  background: #F3F4F6;
+}
+
+.dropdown-item.active {
+  background: #EFF6FF;
+}
+
+.dropdown-item.empty {
+  color: #9CA3AF;
+  cursor: default;
+}
+
+.dropdown-code {
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.dropdown-label {
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Building Pin Marker */
+.building-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.building-pin span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mode-toggle {
+  display: flex;
+}
+
+.mode-btn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.mode-btn:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.mode-btn:last-child {
+  border-radius: 0 6px 6px 0;
+}
+
+.mode-btn.active {
+  background: #fff;
+  color: var(--navbar-bg);
+}
+
+.mode-btn:not(.active) {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.search-input {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 6px;
+  width: 180px;
+  font-size: 13px;
+}
+
+.search-input::placeholder {
+  color: rgba(255,255,255,0.7);
+}
+
+.sign-in-btn {
+  background: #fff;
+  color: var(--navbar-bg);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 18px;
+  border-radius: 6px;
+}
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  transition: background 0.2s ease;
+}
+
+.icon-btn:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.settings-btn {
+  background: rgba(255,255,255,0.25);
+}
+
+/* SECTION 2: DashboardGrid */
+.DashboardGrid {
+  display: grid;
+  grid-template-columns: 1fr 2.5fr;
+  grid-template-rows: auto auto;
+  gap: var(--gap);
+  padding: var(--gap);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Cards */
+.WeatherWidget,
+.CampusMapPanel,
+.EnergyDemandChart,
+.MonthlyDemandChart {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+/* SECTION 3: WeatherWidget */
+.WeatherWidget {
+  grid-row: 1;
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.weather-header {
+  background: var(--navbar-bg);
+  color: #fff;
+  padding: var(--card-padding);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  min-height: 200px;
+}
+
+.weather-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.location .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.weather-date {
+  font-size: 14px;
+  color: #fff;
+  margin-top: 8px;
+}
+
+.weather-time {
+  font-size: 42px;
+  font-weight: 300;
+  color: #fff;
+  line-height: 1;
+  margin-top: 8px;
+}
+
+.weather-condition {
+  font-size: 14px;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 6px;
+}
+
+.weather-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.8);
+}
+
+.weather-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.weather-meta .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.meta-separator {
+  opacity: 0.7;
+}
+
+.weather-temp {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.temp-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.weather-forecast {
+  display: flex;
+  padding: 16px var(--card-padding) var(--card-padding);
+  justify-content: space-between;
+  gap: 4px;
+  flex: 1;
+}
+
+.forecast-day {
+  width: 14%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 4px;
+  border-radius: 8px;
+  text-align: center;
+  gap: 6px;
+  color: var(--text-primary);
+}
+
+.forecast-day.current {
+  background: rgba(86, 134, 192, 0.12);
+}
+
+.day-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.forecast-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+}
+
+.day-high {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.day-low {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.btn-weather-details {
+  background: transparent;
+  border: 1px solid var(--navbar-bg);
+  color: var(--navbar-bg);
+  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin: 0 var(--card-padding) var(--card-padding);
+  font-weight: 600;
+  align-self: flex-start;
+}
+
+.btn-weather-details:hover {
+  background: rgba(86, 134, 192, 0.08);
+}
+
+/* SECTION 4: CampusMapPanel */
+.CampusMapPanel {
+  grid-row: 1;
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+}
+
+.map-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 420px;
+}
+
+.campus-map {
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  background: #e5e7eb;
+}
+
+.map-legend {
+  background: rgba(255,255,255,0.95);
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+  min-width: 200px;
+}
+
+.legend-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.legend-item:last-child {
+  margin-bottom: 0;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.map-layer-btn,
+.map-fullscreen-btn {
+  position: absolute;
+  z-index: 1000;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 1px solid var(--border);
+}
+
+.map-layer-btn {
+  top: 16px;
+  right: 56px;
+}
+
+.map-fullscreen-btn {
+  top: 16px;
+  right: 16px;
+}
+
+.map-layer-btn svg,
+.map-fullscreen-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-grid-details {
+  background: var(--navbar-bg);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: var(--card-padding);
+  align-self: flex-start;
+}
+
+.btn-grid-details:hover {
+  background: #4a75a8;
+}
+
+/* SECTION 5: EnergyDemandChart */
+.EnergyDemandChart {
+  grid-row: 2;
+  grid-column: 1;
+  padding: var(--card-padding);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--card-padding);
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.export-btn {
+  background: rgba(86, 134, 192, 0.1);
+  color: var(--navbar-bg);
+}
+
+.export-btn:hover {
+  background: rgba(86, 134, 192, 0.2);
+}
+
+.demand-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chart-container {
+  position: relative;
+  height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+#donutChart {
+  max-width: 220px;
+  max-height: 220px;
+}
+
+.btn-view-breakdown {
+  background: transparent;
+  border: none;
+  color: var(--navbar-bg);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0;
+  text-align: left;
+  align-self: flex-start;
+}
+
+.btn-view-breakdown:hover {
+  text-decoration: underline;
+}
+
+/* SECTION 6: MonthlyDemandChart */
+.MonthlyDemandChart {
+  grid-row: 2;
+  grid-column: 2;
+  padding: var(--card-padding);
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-dropdown {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.time-range {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.range-btn {
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 16px;
+}
+
+.range-btn.active {
+  background: var(--navbar-bg);
+  color: #fff;
+  border-color: var(--navbar-bg);
+}
+
+.bar-chart-container {
+  height: 320px;
+  margin-bottom: 0;
+}
+
+#barChart {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Leaflet overrides */
+.leaflet-control-zoom a {
+  color: var(--text-primary) !important;
+}
+
+/* Responsive */
+@media (max-width: 1023px) {
+  .DashboardGrid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .WeatherWidget,
+  .CampusMapPanel,
+  .EnergyDemandChart,
+  .MonthlyDemandChart {
+    grid-row: auto;
+    grid-column: 1;
+    width: 100%;
+  }
+
+  .CampusMapPanel {
+    min-height: 450px;
+  }
+
+  .nav-title {
+    font-size: 14px;
+  }
+
+  .HeaderNav {
+    padding: 0 16px;
+  }
+
+  .nav-right {
+    gap: 8px;
+  }
+
+  .search-input {
+    width: 140px;
+  }
+}
+
+@media (max-width: 767px) {
+  .HeaderNav {
+    height: auto;
+    min-height: 64px;
+    flex-direction: column;
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .nav-left,
+  .nav-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .nav-title {
+    font-size: 13px;
+    order: 3;
+    width: 100%;
+    text-align: center;
+  }
+
+  .control-panel-btn {
+    order: 2;
+  }
+
+  .logo {
+    order: 1;
+  }
+
+  .DashboardGrid {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .WeatherWidget,
+  .EnergyDemandChart,
+  .MonthlyDemandChart {
+    padding: 16px;
+  }
+
+  .weather-forecast {
+    padding: 12px 16px 16px;
+  }
+
+  .forecast-day {
+    padding: 8px 2px;
+  }
+
+  .day-label,
+  .day-high,
+  .day-low {
+    font-size: 10px;
+  }
+
+  .forecast-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .map-legend {
+    top: 10px;
+    left: 10px;
+    padding: 12px;
+    min-width: 160px;
+  }
+
+  .legend-item {
+    font-size: 10px;
+  }
+
+  .map-layer-btn {
+    right: 50px;
+    top: 10px;
+  }
+
+  .map-fullscreen-btn {
+    top: 10px;
+    right: 10px;
+  }
+
+  .CampusMapPanel {
+    min-height: 400px;
+  }
+
+  .map-wrapper {
+    min-height: 340px;
+  }
+
+  .campus-map {
+    min-height: 340px;
+  }
+
+  .chart-container {
+    height: 220px;
+  }
+
+  .bar-chart-container {
+    height: 260px;
+  }
+
+  .time-range {
+    flex-wrap: wrap;
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .chart-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 480px) {
+  .mode-toggle {
+    display: none;
+  }
+
+  .search-input {
+    width: 100px;
+  }
+
+  .weather-time {
+    font-size: 36px;
+  }
+
+  .weather-temp {
+    font-size: 22px;
+  }
+
+  .btn-weather-details,
+  .btn-grid-details {
+    width: 100%;
+    align-self: stretch;
+  }
+}
+
+/* Utility for hidden state */
+.hidden {
+  display: none !important;
+}
