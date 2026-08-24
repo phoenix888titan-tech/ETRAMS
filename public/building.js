@@ -98,8 +98,98 @@ async function fetchJSON(url) {
   return res.json();
 }
 
-// --- Components ---
+async function exportDashboardPDF(element, filename = 'building-energy-demand.pdf') {
+  const html2canvas = window.html2canvas;
+  const jsPDF = window.jspdf?.jsPDF;
+  if (!html2canvas || !jsPDF) {
+    alert('PDF libraries are still loading. Please try again in a moment.');
+    return;
+  }
 
+  try {
+    // Clone the dashboard content off-screen and remove sidebar-margin so it fills the PDF page
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'absolute';
+    wrapper.style.left = '-9999px';
+    wrapper.style.top = '0';
+    wrapper.style.width = `${element.scrollWidth}px`;
+    wrapper.style.background = '#FFFFFF';
+    document.body.appendChild(wrapper);
+
+    const clone = element.cloneNode(true);
+    clone.style.marginLeft = '0';
+    clone.style.marginRight = '0';
+    clone.style.padding = '10px';
+    clone.style.width = '100%';
+    clone.style.maxWidth = 'none';
+    clone.style.minWidth = '0';
+    wrapper.appendChild(clone);
+
+    // Hide interactive/action buttons in the PDF capture
+    clone.querySelectorAll('.icon-btn, .filter-actions, .footer-actions, .btn-export-pdf-action').forEach((el) => {
+      el.style.display = 'none';
+    });
+
+    // Convert Chart.js canvases to images so html2canvas captures them correctly
+    const originalCanvases = element.querySelectorAll('canvas');
+    clone.querySelectorAll('canvas').forEach((canvas, index) => {
+      try {
+        const originalCanvas = originalCanvases[index];
+        const dataUrl = originalCanvas.toDataURL('image/png');
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.style.width = originalCanvas.style.width || '100%';
+        img.style.height = originalCanvas.style.height || '100%';
+        img.style.display = 'block';
+        img.style.maxWidth = '100%';
+        canvas.parentNode.replaceChild(img, canvas);
+      } catch (e) {
+        console.warn('Could not convert canvas to image', e);
+      }
+    });
+
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#FFFFFF',
+      windowWidth: clone.scrollWidth,
+      windowHeight: clone.scrollHeight
+    });
+
+    document.body.removeChild(wrapper);
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('l', 'mm', 'a4');
+    const pageWidth = 297;
+    const pageHeight = 210;
+    const margin = 5;
+    const maxWidth = pageWidth - 2 * margin;
+    const maxHeight = pageHeight - 2 * margin;
+
+    const imgWidthPx = canvas.width;
+    const imgHeightPx = canvas.height;
+    const imgAspect = imgHeightPx / imgWidthPx;
+
+    let finalWidth = maxWidth;
+    let finalHeight = finalWidth * imgAspect;
+    if (finalHeight > maxHeight) {
+      finalHeight = maxHeight;
+      finalWidth = finalHeight / imgAspect;
+    }
+
+    const x = (pageWidth - finalWidth) / 2;
+    const y = (pageHeight - finalHeight) / 2;
+
+    pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+    pdf.save(filename);
+  } catch (err) {
+    console.error('PDF export failed', err);
+    alert('PDF export failed. Please try again.');
+  }
+}
+
+// --- Components ---
 function AppHeader() {
   return html`
     <header class="AppHeader" id="AppHeader">
@@ -512,7 +602,7 @@ function App() {
 
   const handleExportPDF = () => {
     if (contentRef.current) {
-      exportDashboardPDF(contentRef.current);
+      exportDashboardPDF(contentRef.current, 'building-energy-demand.pdf');
     }
   };
 
