@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const db = require('./db');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+let PORT = parseInt(process.env.PORT, 10) || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -69,7 +69,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required.' });
     }
     const [rows] = await db.query(
-      'SELECT user_id, username, password_hash, full_name, role FROM users WHERE username = ? AND status = \\'active\\'',
+      `SELECT user_id, username, password_hash, full_name, role FROM users WHERE username = ? AND status = 'active'`,
       [username]
     );
     const user = rows[0];
@@ -116,8 +116,8 @@ app.get('/api/health', async (req, res) => {
 // Get filter options
 app.get('/api/filters', async (req, res) => {
   try {
-    const [grids] = await db.query('SELECT grid_id, grid_code, grid_name FROM grids WHERE status = \\'active\\' ORDER BY grid_id');
-    const [buildings] = await db.query('SELECT building_id, building_code, building_name FROM buildings WHERE status = \\'active\\' ORDER BY building_name');
+    const [grids] = await db.query(`SELECT grid_id, grid_code, grid_name FROM grids WHERE status = 'active' ORDER BY grid_id`);
+    const [buildings] = await db.query(`SELECT building_id, building_code, building_name FROM buildings WHERE status = 'active' ORDER BY building_name`);
     res.json({
       grids,
       buildings,
@@ -407,7 +407,7 @@ app.get('/api/meters/pdf', async (req, res) => {
 
 app.get('/api/grids', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT grid_id AS id, grid_code AS code, grid_name AS name, grid_color AS color, location_lat AS lat, location_lng AS lng FROM grids WHERE status = \\'active\\' ORDER BY grid_id');
+    const [rows] = await db.query(`SELECT grid_id AS id, grid_code AS code, grid_name AS name, grid_color AS color, location_lat AS lat, location_lng AS lng FROM grids WHERE status = 'active' ORDER BY grid_id`);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1177,7 +1177,7 @@ app.delete('/api/settings/users/:id', async (req, res) => {
     const [[target]] = await db.query('SELECT role, status FROM users WHERE user_id = ?', [userId]);
     if (!target) return res.status(404).json({ error: 'User not found.' });
     if (target.role === 'admin' && target.status === 'active') {
-      const [[{ c }]] = await db.query('SELECT COUNT(*) AS c FROM users WHERE role = \\'admin\\' AND status = \\'active\\'');
+      const [[{ c }]] = await db.query(`SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND status = 'active'`);
       if (c <= 1) {
         return res.status(400).json({ error: 'Cannot deactivate the last active admin account.' });
       }
@@ -1189,6 +1189,20 @@ app.delete('/api/settings/users/:id', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`eTRAMS Admin Dashboard server running at http://localhost:${PORT}`);
-});
+function startServer(port) {
+  const server = app.listen(port, () => {
+    console.log(`eTRAMS Admin Dashboard server running at http://localhost:${port}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE' || err.code === 'EACCES' || err.code === 'EPERM') {
+      console.warn(`Port ${port} is in use or restricted, trying ${port + 1}...`);
+      startServer(port + 1);
+    } else {
+      console.error(err);
+      process.exit(1);
+    }
+  });
+}
+
+startServer(PORT);
