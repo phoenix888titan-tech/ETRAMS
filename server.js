@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const db = require('./db');
 
 const app = express();
-let PORT = parseInt(process.env.PORT, 10) || 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -1189,20 +1189,6 @@ app.delete('/api/settings/users/:id', async (req, res) => {
   }
 });
 
-function startServer(port) {
-  const server = app.listen(port, () => {
-    console.log(`eTRAMS Admin Dashboard server running at http://localhost:${port}`);
-  });
-
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE' || err.code === 'EACCES' || err.code === 'EPERM') {
-      console.warn(`Port ${port} is in use or restricted, trying ${port + 1}...`);
-      startServer(port + 1);
-    } else {
-      console.error(err);
-      process.exit(1);
-    }
-  });
-}
-
-startServer(PORT);
+app.listen(PORT, () => {
+  console.log(`eTRAMS Admin Dashboard server running at http://localhost:${PORT}`);
+});
