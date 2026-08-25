@@ -122,28 +122,32 @@ const ENTITIES = {
         `
       },
       { key: 'lat', label: 'Latitude' },
-      { key: 'lng', label: 'Longitude' }
+      { key: 'lng', label: 'Longitude' },
+      { key: 'status', label: 'Status', render: renderStatus } // Patched grid
     ],
     fields: [
       { key: 'code', label: 'Grid Code', type: 'text', required: true },
       { key: 'name', label: 'Grid Name', type: 'text', required: true },
       { key: 'color', label: 'Color', type: 'color' },
       { key: 'lat', label: 'Latitude', type: 'number', step: 'any' },
-      { key: 'lng', label: 'Longitude', type: 'number', step: 'any' }
+      { key: 'lng', label: 'Longitude', type: 'number', step: 'any' },
+      { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] }
     ],
     initialForm: (row) => ({
       code: row?.code ?? '',
       name: row?.name ?? '',
       color: row?.color ?? '#3B82F6',
       lat: row?.lat ?? '',
-      lng: row?.lng ?? ''
+      lng: row?.lng ?? '',
+      status: row?.status ?? 'active'
     }),
     payload: (form) => ({
       code: form.code,
       name: form.name,
       color: form.color || '#3B82F6',
       lat: form.lat === '' || form.lat === null ? null : Number(form.lat),
-      lng: form.lng === '' || form.lng === null ? null : Number(form.lng)
+      lng: form.lng === '' || form.lng === null ? null : Number(form.lng),
+      status: form.status
     })
   },
   building: {
@@ -158,27 +162,32 @@ const ENTITIES = {
       { key: 'name', label: 'Name' },
       { key: 'type', label: 'Type' },
       { key: 'floorCount', label: 'Floors' },
-      { key: 'gridName', label: 'Grid' }
+      { key: 'gridName', label: 'Grid' },
+      { key: 'status', label: 'Status', render: renderStatus } // Patched building
     ],
     fields: [
       { key: 'code', label: 'Building Code', type: 'text', required: true },
       { key: 'name', label: 'Building Name', type: 'text', required: true },
       { key: 'type', label: 'Building Type', type: 'select', options: BUILDING_TYPES },
-      { key: 'floorCount', label: 'Floor Count', type: 'number', min: 1 }
+      { key: 'floorCount', label: 'Floor Count', type: 'number', min: 1 },
+      { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] }
     ],
     initialForm: (row, lists) => ({
       ...chainFor('building', row, lists),
       code: row?.code ?? '',
       name: row?.name ?? '',
       type: row?.type ?? 'academic',
-      floorCount: row?.floorCount ?? 1
+      floorCount: row?.floorCount ?? 1,
+      status: row?.status ?? 'active'
     }),
     payload: (form) => ({
       gridId: Number(form.gridId),
       code: form.code,
       name: form.name,
       type: form.type,
-      floorCount: form.floorCount === '' || form.floorCount === null ? 1 : Number(form.floorCount)
+      status: form.status,
+      floorCount: form.floorCount === '' || form.floorCount === null ? 1 : Number(form.floorCount),
+      status: form.status
     })
   },
   area: {
@@ -194,27 +203,31 @@ const ENTITIES = {
       { key: 'name', label: 'Name' },
       { key: 'type', label: 'Type' },
       { key: 'floorNumber', label: 'Floor' },
-      { key: 'buildingName', label: 'Building' }
+      { key: 'buildingName', label: 'Building' },
+      { key: 'status', label: 'Status', render: renderStatus } // Patched area
     ],
     fields: [
       { key: 'code', label: 'Area Code', type: 'text', required: true },
       { key: 'name', label: 'Area Name', type: 'text', required: true },
       { key: 'type', label: 'Area Type', type: 'select', options: AREA_TYPES },
-      { key: 'floorNumber', label: 'Floor Number', type: 'number' }
+      { key: 'floorNumber', label: 'Floor Number', type: 'number' },
+      { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] }
     ],
     initialForm: (row, lists) => ({
       ...chainFor('area', row, lists),
       code: row?.code ?? '',
       name: row?.name ?? '',
       type: row?.type ?? 'floor',
-      floorNumber: row?.floorNumber ?? ''
+      floorNumber: row?.floorNumber ?? '',
+      status: row?.status ?? 'active'
     }),
     payload: (form) => ({
       buildingId: Number(form.buildingId),
       code: form.code,
       name: form.name,
       type: form.type,
-      floorNumber: form.floorNumber === '' || form.floorNumber === null ? null : Number(form.floorNumber)
+      floorNumber: form.floorNumber === '' || form.floorNumber === null ? null : Number(form.floorNumber),
+      status: form.status
     })
   },
   meter: {
@@ -231,18 +244,21 @@ const ENTITIES = {
       { key: 'description', label: 'Description' },
       { key: 'type', label: 'Type' },
       { key: 'areaName', label: 'Area' },
+      { key: 'status', label: 'Status', render: renderStatus } // Patched meter,
       { key: 'buildingName', label: 'Building' }
     ],
     fields: [
       { key: 'code', label: 'Meter Code', type: 'text', required: true },
       { key: 'description', label: 'Description', type: 'text', required: true },
-      { key: 'type', label: 'Meter Type', type: 'select', options: METER_TYPES }
+      { key: 'type', label: 'Meter Type', type: 'select', options: METER_TYPES },
+      { key: 'status', label: 'Status', type: 'select', options: ['live', 'down', 'maintenance', 'offline'] }
     ],
     initialForm: (row, lists) => ({
       ...chainFor('meter', row, lists),
       code: row?.code ?? '',
       description: row?.description ?? '',
-      type: row?.type ?? 'main'
+      type: row?.type ?? 'main',
+      status: row?.status ?? 'down'
     }),
     payload: (form) => ({
       areaId: Number(form.areaId),
@@ -260,7 +276,8 @@ const ENTITIES = {
       { key: 'username', label: 'Username' },
       { key: 'fullName', label: 'Full Name' },
       { key: 'role', label: 'Role' },
-      { key: 'lastLogin', label: 'Last Login' }
+      { key: 'lastLogin', label: 'Last Login' },
+      { key: 'status', label: 'Status', render: renderStatus } // Patched user
     ],
     fields: [
       { key: 'username', label: 'Username', type: 'text', required: true },
@@ -272,6 +289,7 @@ const ENTITIES = {
       username: row?.username ?? '',
       fullName: row?.fullName ?? '',
       password: '',
+      status: row?.status ?? 'active',
       role: row?.role ?? 'viewer'
     }),
     payload: (form) => ({
