@@ -461,6 +461,7 @@ function CrudTable({ entity, lists, reloadLists }) {
   const [error, setError] = useState('');
   const [modal, setModal] = useState(null);
   const [sortConfig, setSortConfig] = useState(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   const requestSort = (key) => {
     let direction = 'asc';
@@ -471,7 +472,11 @@ function CrudTable({ entity, lists, reloadLists }) {
   };
 
   const sortedRows = useMemo(() => {
-    let sortableItems = [...rows];
+    let sortableItems = rows.filter(r => {
+      if (showInactive) return true;
+      return String(r.status || '').toLowerCase() !== 'inactive';
+    });
+    
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
         let valA = a[sortConfig.key] ?? '';
@@ -484,7 +489,7 @@ function CrudTable({ entity, lists, reloadLists }) {
       });
     }
     return sortableItems;
-  }, [rows, sortConfig]);
+  }, [rows, sortConfig, showInactive]);
 
   const load = async () => {
     setLoading(true);
@@ -525,10 +530,16 @@ function CrudTable({ entity, lists, reloadLists }) {
     <div class="card">
       <div class="crud-toolbar">
         <span class="crud-toolbar-title">${config.label} Management</span>
-        <button class="btn btn-primary" onClick=${() => setModal({})}>
-          <${PlusIcon} />
-          Add ${config.label}
-        </button>
+        <div style=${{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <label style=${{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748b', cursor: 'pointer', userSelect: 'none' }}>
+            <input type="checkbox" checked=${showInactive} onChange=${(e) => setShowInactive(e.target.checked)} />
+            Show inactive records
+          </label>
+          <button class="btn btn-primary" onClick=${() => setModal({})}>
+            <${PlusIcon} />
+            Add ${config.label}
+          </button>
+        </div>
       </div>
       ${error && html`<div class="form-error" style=${{ marginBottom: '12px' }}>${error}</div>`}
       <div class="crud-table-wrapper">
