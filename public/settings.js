@@ -480,9 +480,8 @@ function CrudTable({ entity, lists, reloadLists }) {
       // 2. Search query filter (search across all visible columns)
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        // check if any of the configured columns contain the query string
-        const match = config.columns.some(col => {
-          const val = r[col.key];
+        // search all properties of the row to catch everything (ID, name, code, etc.)
+        const match = Object.values(r).some(val => {
           return val != null && String(val).toLowerCase().includes(query);
         });
         if (!match) return false;
