@@ -462,6 +462,7 @@ function CrudTable({ entity, lists, reloadLists }) {
   const [modal, setModal] = useState(null);
   const [sortConfig, setSortConfig] = useState(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const requestSort = (key) => {
     let direction = 'asc';
@@ -473,8 +474,20 @@ function CrudTable({ entity, lists, reloadLists }) {
 
   const sortedRows = useMemo(() => {
     let sortableItems = rows.filter(r => {
-      if (showInactive) return true;
-      return String(r.status || '').toLowerCase() !== 'inactive';
+      // 1. Inactive filter
+      if (!showInactive && String(r.status || '').toLowerCase() === 'inactive') return false;
+      
+      // 2. Search query filter (search across all visible columns)
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        // check if any of the configured columns contain the query string
+        const match = config.columns.some(col => {
+          const val = r[col.key];
+          return val != null && String(val).toLowerCase().includes(query);
+        });
+        if (!match) return false;
+      }
+      return true;
     });
     
     if (sortConfig !== null) {
@@ -531,6 +544,13 @@ function CrudTable({ entity, lists, reloadLists }) {
       <div class="crud-toolbar">
         <span class="crud-toolbar-title">${config.label} Management</span>
         <div style=${{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <input 
+            type="text" 
+            placeholder="Search records..." 
+            value=${searchQuery} 
+            onChange=${(e) => setSearchQuery(e.target.value)}
+            style=${{ padding: '6px 12px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '6px', width: '200px' }}
+          />
           <label style=${{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748b', cursor: 'pointer', userSelect: 'none' }}>
             <input type="checkbox" checked=${showInactive} onChange=${(e) => setShowInactive(e.target.checked)} />
             Show inactive records
