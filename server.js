@@ -796,6 +796,7 @@ app.get('/api/settings/grids', async (req, res) => {
         location_lng AS lng,
         status
       FROM grids
+      WHERE status = 'active'
       ORDER BY grid_id
     `);
     res.json(rows);
@@ -858,6 +859,7 @@ app.get('/api/settings/loops', async (req, res) => {
         l.status
       FROM loops l
       JOIN grids g ON l.grid_id = g.grid_id
+      WHERE l.status = 'active'
       ORDER BY l.grid_id, l.loop_id
     `);
     res.json(rows);
@@ -922,6 +924,7 @@ app.get('/api/settings/buildings', async (req, res) => {
         b.status
       FROM buildings b
       JOIN grids g ON b.grid_id = g.grid_id
+      WHERE b.status = 'active'
       ORDER BY b.building_name
     `);
     res.json(rows);
@@ -991,6 +994,7 @@ app.get('/api/settings/areas', async (req, res) => {
         a.status
       FROM areas a
       JOIN buildings b ON a.building_id = b.building_id
+      WHERE a.status = 'active'
       ORDER BY b.building_name, a.area_name
     `);
     res.json(rows);
@@ -1118,7 +1122,8 @@ app.get('/api/settings/users', async (req, res) => {
         status,
         last_login AS lastLogin
       FROM users
-      ORDER BY user_id
+      WHERE status = 'active'
+      ORDER BY username
     `);
     res.json(rows);
   } catch (err) {
