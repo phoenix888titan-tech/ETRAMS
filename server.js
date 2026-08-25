@@ -963,7 +963,12 @@ app.put('/api/settings/buildings/:id', async (req, res) => {
 
 app.delete('/api/settings/buildings/:id', async (req, res) => {
   try {
-    const [result] = await db.query('UPDATE buildings SET status = "inactive" WHERE building_id = ?', [req.params.id]);
+    const [areas] = await db.query(`SELECT COUNT(*) as count FROM areas WHERE building_id = ? AND status = 'active'`, [req.params.id]);
+    if (areas[0].count > 0) {
+      return res.status(400).json({ error: 'Cannot delete building: It still contains active areas. Please reassign or delete them first.' });
+    }
+
+    const [result] = await db.query(`UPDATE buildings SET status = 'inactive' WHERE building_id = ?`, [req.params.id]);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Building not found.' });
     res.json({ id: parseInt(req.params.id, 10), status: 'inactive' });
   } catch (err) {
