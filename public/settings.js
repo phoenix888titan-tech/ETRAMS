@@ -99,7 +99,7 @@ const renderStatus = (row) => {
   if (s === 'active' || s === 'live') color = '#22c55e';
   else if (s === 'inactive' || s === 'down' || s === 'offline') color = '#ef4444';
   else if (s === 'maintenance') color = '#f59e0b';
-  return html`<span style="${{ display: 'inline-block', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: '600', color: '#fff', backgroundColor: color }}">${row.status || 'unknown'}</span>`;
+  return html`<span style=${{ display: 'inline-block', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: '600', color: '#fff', backgroundColor: color }}>${row.status || 'unknown'}</span>`;
 };
 
 const ENTITIES = {
@@ -123,7 +123,7 @@ const ENTITIES = {
       },
       { key: 'lat', label: 'Latitude' },
       { key: 'lng', label: 'Longitude' },
-      { key: 'status', label: 'Status', render: renderStatus } // Patched grid
+      { key: 'status', label: 'Status', render: renderStatus }, // Patched grid
     ],
     fields: [
       { key: 'code', label: 'Grid Code', type: 'text', required: true },
@@ -163,7 +163,7 @@ const ENTITIES = {
       { key: 'type', label: 'Type' },
       { key: 'floorCount', label: 'Floors' },
       { key: 'gridName', label: 'Grid' },
-      { key: 'status', label: 'Status', render: renderStatus } // Patched building
+      { key: 'status', label: 'Status', render: renderStatus }, // Patched building
     ],
     fields: [
       { key: 'code', label: 'Building Code', type: 'text', required: true },
@@ -204,7 +204,7 @@ const ENTITIES = {
       { key: 'type', label: 'Type' },
       { key: 'floorNumber', label: 'Floor' },
       { key: 'buildingName', label: 'Building' },
-      { key: 'status', label: 'Status', render: renderStatus } // Patched area
+      { key: 'status', label: 'Status', render: renderStatus }, // Patched area
     ],
     fields: [
       { key: 'code', label: 'Area Code', type: 'text', required: true },
@@ -244,7 +244,7 @@ const ENTITIES = {
       { key: 'description', label: 'Description' },
       { key: 'type', label: 'Type' },
       { key: 'areaName', label: 'Area' },
-      { key: 'status', label: 'Status', render: renderStatus } // Patched meter,
+      { key: 'status', label: 'Status', render: renderStatus }, // Patched meter,
       { key: 'buildingName', label: 'Building' }
     ],
     fields: [
@@ -277,7 +277,7 @@ const ENTITIES = {
       { key: 'fullName', label: 'Full Name' },
       { key: 'role', label: 'Role' },
       { key: 'lastLogin', label: 'Last Login' },
-      { key: 'status', label: 'Status', render: renderStatus } // Patched user
+      { key: 'status', label: 'Status', render: renderStatus }, // Patched user
     ],
     fields: [
       { key: 'username', label: 'Username', type: 'text', required: true },
