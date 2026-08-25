@@ -547,7 +547,7 @@ function CrudTable({ entity, lists, reloadLists }) {
             type="text" 
             placeholder="Search records..." 
             value=${searchQuery} 
-            onChange=${(e) => setSearchQuery(e.target.value)}
+            onInput=${(e) => setSearchQuery(e.target.value)}
             style=${{ padding: '6px 12px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '6px', width: '200px' }}
           />
           <label style=${{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748b', cursor: 'pointer', userSelect: 'none' }}>
