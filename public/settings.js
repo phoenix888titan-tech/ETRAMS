@@ -501,7 +501,7 @@ function CrudTable({ entity, lists, reloadLists }) {
       });
     }
     return sortableItems;
-  }, [rows, sortConfig, showInactive]);
+  }, [rows, sortConfig, showInactive, searchQuery]);
 
   const load = async () => {
     setLoading(true);
