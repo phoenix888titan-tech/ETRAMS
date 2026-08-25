@@ -93,6 +93,15 @@ function chainFor(entity, row, lists) {
   return chain;
 }
 
+const renderStatus = (row) => {
+  let color = '#3b82f6';
+  const s = String(row.status || '').toLowerCase();
+  if (s === 'active' || s === 'live') color = '#22c55e';
+  else if (s === 'inactive' || s === 'down' || s === 'offline') color = '#ef4444';
+  else if (s === 'maintenance') color = '#f59e0b';
+  return html`<span style="${{ display: 'inline-block', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: '600', color: '#fff', backgroundColor: color }}">${row.status || 'unknown'}</span>`;
+};
+
 const ENTITIES = {
   grid: {
     label: 'Grid',
