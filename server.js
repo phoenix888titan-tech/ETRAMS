@@ -4,11 +4,12 @@ const cors = require('cors');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const db = require('./db');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:3000' }));
 app.use(express.json());
 
 // --- Authentication (token cookie, in-memory sessions) ---
@@ -29,13 +30,20 @@ function parseCookies(req) {
 
 function getSessionUser(req) {
   const token = parseCookies(req)[SESSION_COOKIE];
-  return token ? sessions.get(token) || null : null;
+  if (!token) return null;
+  const session = sessions.get(token);
+  if (!session) return null;
+  if (Date.now() > session.expires) {
+    sessions.delete(token);
+    return null;
+  }
+  return session.user;
 }
 
 function setSession(res, user) {
   const token = crypto.randomBytes(32).toString('hex');
-  sessions.set(token, user);
-  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax`);
+  sessions.set(token, { user, expires: Date.now() + 12 * 60 * 60 * 1000 });
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${token}; HttpOnly; Secure; Path=/; SameSite=Lax`);
 }
 
 function clearSession(req, res) {
@@ -62,7 +70,13 @@ app.use('/api/settings', (req, res, next) => {
 });
 
 // Auth endpoints
-app.post('/api/auth/login', async (req, res) => {
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login requests per `window`
+  message: { error: 'Too many login attempts, please try again after 15 minutes.' }
+});
+
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body || {};
     if (!username || !password) {
@@ -81,7 +95,8 @@ app.post('/api/auth/login', async (req, res) => {
     setSession(res, sessionUser);
     res.json(sessionUser);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -139,7 +154,8 @@ app.get('/api/filters', async (req, res) => {
       years: [2025, 2026, 2027]
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -197,7 +213,8 @@ app.get('/api/summary', async (req, res) => {
 
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -219,8 +236,8 @@ app.get('/api/meters', async (req, res) => {
       order = 'asc'
     } = req.query;
 
-    const offset = (Math.max(1, parseInt(page, 10)) - 1) * parseInt(limit, 10);
-    const pageLimit = parseInt(limit, 10);
+    const pageLimit = Math.min(parseInt(limit, 10) || 25, 100);
+    const offset = (Math.max(1, parseInt(page, 10) || 1) - 1) * pageLimit;
 
     let where = 'WHERE 1=1';
     const params = [];
@@ -315,7 +332,8 @@ app.get('/api/meters', async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -394,7 +412,8 @@ app.get('/api/meters/csv', async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename="etrams-report.csv"');
     res.send(csv);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -410,7 +429,8 @@ app.get('/api/grids', async (req, res) => {
     const [rows] = await db.query(`SELECT grid_id AS id, grid_code AS code, grid_name AS name, grid_color AS color, location_lat AS lat, location_lng AS lng FROM grids WHERE status = 'active' ORDER BY grid_id`);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -418,7 +438,8 @@ app.get('/api/loops', async (req, res) => {
   try {
     res.json([]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -446,7 +467,8 @@ app.get('/api/buildings', async (req, res) => {
     const [rows] = await db.query(sql, params);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -474,7 +496,8 @@ app.get('/api/areas', async (req, res) => {
     const [rows] = await db.query(sql, params);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -522,7 +545,8 @@ app.get('/api/building-demand', async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -559,7 +583,8 @@ app.get('/api/grid-demand', async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -602,7 +627,8 @@ app.get('/api/grid-loop-demand', async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -652,7 +678,8 @@ app.get('/api/building-area-demand', async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -683,7 +710,8 @@ app.get('/api/monthly-grid-kw', async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -728,7 +756,8 @@ app.get('/api/meter-readings', async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -764,7 +793,8 @@ app.get('/api/meter-averages', async (req, res) => {
 
     res.json(rows[0] || {});
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -772,10 +802,11 @@ app.get('/api/meter-averages', async (req, res) => {
 
 // Send a validation (400), duplicate-code (409), or server (500) error response
 function sendCrudError(res, err) {
+  console.error('Database Error:', err.message);
   if (err && err.code === 'ER_DUP_ENTRY') {
     return res.status(409).json({ error: 'A record with this code already exists.' });
   }
-  res.status(500).json({ error: err.message });
+  res.status(500).json({ error: 'Internal Server Error' });
 }
 
 function requireFields(body, fields) {
@@ -800,7 +831,8 @@ app.get('/api/settings/grids', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -841,7 +873,8 @@ app.delete('/api/settings/grids/:id', async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Grid not found.' });
     res.json({ id: parseInt(req.params.id, 10), status: 'inactive' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -862,7 +895,8 @@ app.get('/api/settings/loops', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -903,7 +937,8 @@ app.delete('/api/settings/loops/:id', async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Loop not found.' });
     res.json({ id: parseInt(req.params.id, 10), status: 'inactive' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -926,7 +961,8 @@ app.get('/api/settings/buildings', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -972,7 +1008,8 @@ app.delete('/api/settings/buildings/:id', async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Building not found.' });
     res.json({ id: parseInt(req.params.id, 10), status: 'inactive' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -995,7 +1032,8 @@ app.get('/api/settings/areas', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -1036,7 +1074,8 @@ app.delete('/api/settings/areas/:id', async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Area not found.' });
     res.json({ id: parseInt(req.params.id, 10), status: 'inactive' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -1061,7 +1100,8 @@ app.get('/api/settings/meters', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -1102,7 +1142,8 @@ app.delete('/api/settings/meters/:id', async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Meter not found.' });
     res.json({ id: parseInt(req.params.id, 10), deleted: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -1122,7 +1163,8 @@ app.get('/api/settings/users', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -1133,6 +1175,9 @@ app.post('/api/settings/users', async (req, res) => {
     const { username, fullName, password, role, status = 'active' } = req.body;
     if (!['admin', 'viewer'].includes(role)) {
       return res.status(400).json({ error: 'Role must be admin or viewer.' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
     }
     const passwordHash = await bcrypt.hash(password, 10);
     const [result] = await db.query(
@@ -1152,6 +1197,9 @@ app.put('/api/settings/users/:id', async (req, res) => {
     const { username, fullName, password, role, status = 'active' } = req.body;
     if (!['admin', 'viewer'].includes(role)) {
       return res.status(400).json({ error: 'Role must be admin or viewer.' });
+    }
+    if (password && password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
     }
     let result;
     if (password) {
