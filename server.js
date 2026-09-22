@@ -242,93 +242,117 @@ app.get('/api/meters', async (req, res) => {
     let where = 'WHERE 1=1';
     const params = [];
 
-    if (grid_id) {
-      where += ' AND g.grid_id = ?';
-      params.push(grid_id);
-    }
-    if (building_id) {
-      where += ' AND b.building_id = ?';
-      params.push(building_id);
-    }
-    if (area_id) {
-      where += ' AND pm.area_id = ?';
-      params.push(area_id);
-    }
-    if (status) {
-      where += ' AND pm.status = ?';
-      params.push(status);
-    }
     if (start_date) {
-      where += ' AND pm.reading_datetime >= ?';
+      where += ' AND mr.reading_datetime >= ?';
       params.push(start_date.includes(' ') || start_date.includes('T') ? start_date.replace('T', ' ') : `${start_date} 00:00:00`);
     }
     if (end_date) {
-      where += ' AND pm.reading_datetime <= ?';
+      where += ' AND mr.reading_datetime <= ?';
       params.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
     }
     if (month) {
-      where += ' AND MONTH(pm.reading_datetime) = ?';
+      where += ' AND MONTH(mr.reading_datetime) = ?';
       params.push(month);
     }
     if (year) {
-      where += ' AND YEAR(pm.reading_datetime) = ?';
+      where += ' AND YEAR(mr.reading_datetime) = ?';
       params.push(year);
+    }
+
+    let hierarchyWhere = 'WHERE 1=1';
+    const hierarchyParams = [];
+
+    if (grid_id) {
+      hierarchyWhere += ' AND g.grid_id = ?';
+      hierarchyParams.push(grid_id);
+    }
+    if (building_id) {
+      hierarchyWhere += ' AND b.building_id = ?';
+      hierarchyParams.push(building_id);
+    }
+    if (area_id) {
+      hierarchyWhere += ' AND pm.area_id = ?';
+      hierarchyParams.push(area_id);
+    }
+    if (status) {
+      hierarchyWhere += ' AND pm.status = ?';
+      hierarchyParams.push(status);
     }
 
     const validSortColumns = ['meter_id', 'meter_code', 'current_reading', 'active_power', 'total_energy'];
     const sortColumn = validSortColumns.includes(sort) ? sort : 'meter_id';
     const sortOrder = order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
 
+    // Build the query to get first/last readings per meter within the date range
+    const cte = `
+      WITH RankedReadings AS (
+        SELECT 
+          mr.meter_id,
+          mr.current_reading,
+          mr.active_power,
+          mr.amps,
+          mr.freq,
+          mr.power_factor,
+          mr.vll,
+          mr.vln,
+          mr.reading_datetime,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
+        FROM meter_readings mr
+        ${where}
+      )
+    `;
+
     const countQuery = `
+      ${cte}
       SELECT COUNT(*) AS total
       FROM power_meters pm
       JOIN areas a ON pm.area_id = a.area_id
       JOIN buildings b ON a.building_id = b.building_id
       JOIN grids g ON b.grid_id = g.grid_id
-      ${where}
+      ${hierarchyWhere}
     `;
 
     const dataQuery = `
+      ${cte}
       SELECT
         pm.meter_id,
         pm.meter_code,
         pm.meter_description,
-        pm.current_reading,
-        pm.previous_reading,
-        (pm.current_reading - pm.previous_reading) AS total_used,
-        pm.active_power,
-        pm.amps,
-        pm.freq,
-        pm.power_factor,
-        pm.vll,
-        pm.vln,
-        pm.reactive_power,
-        pm.apparent_power,
-        pm.total_energy,
+        COALESCE(last_read.current_reading, 0) AS current_reading,
+        COALESCE(first_read.current_reading, 0) AS previous_reading,
+        (COALESCE(last_read.current_reading, 0) - COALESCE(first_read.current_reading, 0)) AS total_used,
+        COALESCE(last_read.active_power, 0) AS active_power,
+        COALESCE(last_read.amps, 0) AS amps,
+        COALESCE(last_read.freq, 0) AS freq,
+        COALESCE(last_read.power_factor, 0) AS power_factor,
+        COALESCE(last_read.vll, 0) AS vll,
+        COALESCE(last_read.vln, 0) AS vln,
         pm.status,
-        pm.reading_datetime,
-        a.area_name,
-        b.building_name,
-        g.grid_name
+        last_read.reading_datetime
       FROM power_meters pm
       JOIN areas a ON pm.area_id = a.area_id
       JOIN buildings b ON a.building_id = b.building_id
       JOIN grids g ON b.grid_id = g.grid_id
-      ${where}
+      LEFT JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
+      LEFT JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1
+      ${hierarchyWhere}
       ORDER BY ${sortColumn} ${sortOrder}
       LIMIT ? OFFSET ?
     `;
 
-    const [[countResult]] = await db.query(countQuery, params);
-    const [rows] = await db.query(dataQuery, [...params, pageLimit, offset]);
+    const [countRows] = await db.query(countQuery, [...params, ...hierarchyParams]);
+    const total = countRows[0].total;
+
+    const [dataRows] = await db.query(dataQuery, [...params, ...hierarchyParams, pageLimit, offset]);
 
     res.json({
-      data: rows,
+      data: dataRows,
       pagination: {
+        total,
         page: parseInt(page, 10),
         limit: pageLimit,
-        total: countResult.total,
-        totalPages: Math.ceil(countResult.total / pageLimit)
+        totalPages: Math.ceil(total / pageLimit)
       }
     });
   } catch (err) {
@@ -337,7 +361,6 @@ app.get('/api/meters', async (req, res) => {
   }
 });
 
-// CSV export
 app.get('/api/meters/csv', async (req, res) => {
   try {
     const { grid_id, building_id, area_id, status, month, year, start_date, end_date } = req.query;
@@ -345,79 +368,118 @@ app.get('/api/meters/csv', async (req, res) => {
     let where = 'WHERE 1=1';
     const params = [];
 
-    if (grid_id) {
-      where += ' AND g.grid_id = ?';
-      params.push(grid_id);
-    }
-    if (building_id) {
-      where += ' AND b.building_id = ?';
-      params.push(building_id);
-    }
-    if (area_id) {
-      where += ' AND a.area_id = ?';
-      params.push(area_id);
-    }
-    if (status) {
-      where += ' AND pm.status = ?';
-      params.push(status);
-    }
     if (start_date) {
-      where += ' AND pm.reading_datetime >= ?';
+      where += ' AND mr.reading_datetime >= ?';
       params.push(start_date.includes(' ') || start_date.includes('T') ? start_date.replace('T', ' ') : `${start_date} 00:00:00`);
     }
     if (end_date) {
-      where += ' AND pm.reading_datetime <= ?';
+      where += ' AND mr.reading_datetime <= ?';
       params.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
     }
     if (month) {
-      where += ' AND MONTH(pm.reading_datetime) = ?';
+      where += ' AND MONTH(mr.reading_datetime) = ?';
       params.push(month);
     }
     if (year) {
-      where += ' AND YEAR(pm.reading_datetime) = ?';
+      where += ' AND YEAR(mr.reading_datetime) = ?';
       params.push(year);
     }
 
-    const [rows] = await db.query(`
+    let hierarchyWhere = 'WHERE 1=1';
+    const hierarchyParams = [];
+
+    if (grid_id) {
+      hierarchyWhere += ' AND g.grid_id = ?';
+      hierarchyParams.push(grid_id);
+    }
+    if (building_id) {
+      hierarchyWhere += ' AND b.building_id = ?';
+      hierarchyParams.push(building_id);
+    }
+    if (area_id) {
+      hierarchyWhere += ' AND pm.area_id = ?';
+      hierarchyParams.push(area_id);
+    }
+    if (status) {
+      hierarchyWhere += ' AND pm.status = ?';
+      hierarchyParams.push(status);
+    }
+
+    const cte = `
+      WITH RankedReadings AS (
+        SELECT 
+          mr.meter_id,
+          mr.current_reading,
+          mr.active_power,
+          mr.amps,
+          mr.freq,
+          mr.power_factor,
+          mr.vll,
+          mr.vln,
+          mr.reading_datetime,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
+        FROM meter_readings mr
+        ${where}
+      )
+    `;
+
+    const csvQuery = `
+      ${cte}
       SELECT
         pm.meter_code AS MeterID,
         pm.meter_description AS Description,
         b.building_name AS Building,
         a.area_name AS AreaFloor,
         g.grid_name AS Grid,
-        pm.current_reading AS CurrentReading,
-        pm.previous_reading AS PreviousReading,
-        (pm.current_reading - pm.previous_reading) AS TotalUsed,
-        pm.active_power AS ActivePower,
-        pm.amps AS Amps,
-        pm.power_factor AS PowerFactor,
-        pm.vll AS VLL,
-        pm.vln AS VLN,
-        pm.total_energy AS TotalEnergy,
+        COALESCE(last_read.current_reading, 0) AS CurrentReading,
+        COALESCE(first_read.current_reading, 0) AS PreviousReading,
+        (COALESCE(last_read.current_reading, 0) - COALESCE(first_read.current_reading, 0)) AS TotalUsed,
+        COALESCE(last_read.active_power, 0) AS ActivePower,
+        COALESCE(last_read.amps, 0) AS Amps,
+        COALESCE(last_read.power_factor, 0) AS PowerFactor,
+        COALESCE(last_read.vll, 0) AS VLL,
+        COALESCE(last_read.vln, 0) AS VLN,
         pm.status AS Status,
-        pm.reading_datetime AS ReadingDateTime
+        last_read.reading_datetime AS ReadingDatetime
       FROM power_meters pm
       JOIN areas a ON pm.area_id = a.area_id
       JOIN buildings b ON a.building_id = b.building_id
       JOIN grids g ON b.grid_id = g.grid_id
-      ${where}
-      ORDER BY pm.meter_id
-    `, params);
+      LEFT JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
+      LEFT JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1
+      ${hierarchyWhere}
+      ORDER BY pm.meter_id ASC
+    `;
 
-    const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
-    const lines = [headers.join(','), ...rows.map((row) => headers.map((h) => `"${String(row[h] ?? '').replace(/"/g, '""')}"`).join(','))];
-    const csv = lines.join('\n');
+    const [rows] = await db.query(csvQuery, [...params, ...hierarchyParams]);
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="etrams-report.csv"');
-    res.send(csv);
+    if (!rows.length) {
+      return res.status(404).send('No data found for the selected filters.');
+    }
+
+    const fields = Object.keys(rows[0]);
+    const csvRows = [fields.join(',')];
+
+    for (const row of rows) {
+      const values = fields.map(field => {
+        const val = row[field];
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'string' && val.includes(',')) return `"${val.replace(/"/g, '""')}"`;
+        return val;
+      });
+      csvRows.push(values.join(','));
+    }
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment('meter_report.csv');
+    res.send(csvRows.join('\n'));
   } catch (err) {
     console.error('API Error:', err.message);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-// PDF export placeholder
 app.get('/api/meters/pdf', async (req, res) => {
   res.json({ message: 'Use browser print and select Save as PDF for now.' });
 });

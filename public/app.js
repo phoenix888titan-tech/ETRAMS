@@ -7,8 +7,8 @@ const state = {
     gridId: '',
     buildingId: '',
     areaId: '',
-    startDate: '2026-06-10T12:00',
-    endDate: '2026-06-13T17:00'
+    startDate: '',
+    endDate: ''
   },
   pagination: {
     page: 1,
@@ -240,12 +240,22 @@ function setupFilters() {
   });
 
   els.startTimeInput.addEventListener('change', () => {
+    if (els.startTimeInput.value && els.endTimeInput.value && new Date(els.startTimeInput.value) > new Date(els.endTimeInput.value)) {
+      alert('Start Date-Time must be earlier than or equal to End Date-Time.');
+      els.startTimeInput.value = state.filters.startDate;
+      return;
+    }
     state.filters.startDate = els.startTimeInput.value;
     state.pagination.page = 1;
     refresh();
   });
 
   els.endTimeInput.addEventListener('change', () => {
+    if (els.startTimeInput.value && els.endTimeInput.value && new Date(els.startTimeInput.value) > new Date(els.endTimeInput.value)) {
+      alert('Start Date-Time must be earlier than or equal to End Date-Time.');
+      els.endTimeInput.value = state.filters.endDate;
+      return;
+    }
     state.filters.endDate = els.endTimeInput.value;
     state.pagination.page = 1;
     refresh();
@@ -411,8 +421,8 @@ function setupActionButtons() {
       gridId: els.gridSelect.options[0]?.value || '',
       buildingId: '',
       areaId: '',
-      startDate: '2026-06-10T12:00',
-      endDate: '2026-06-13T17:00'
+      startDate: '',
+      endDate: ''
     };
     els.gridSelect.value = state.filters.gridId;
     els.startTimeInput.value = state.filters.startDate;
