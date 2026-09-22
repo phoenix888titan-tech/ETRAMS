@@ -2,13 +2,20 @@
 
 const API_BASE = '';
 
+const now = new Date();
+const year = now.getFullYear();
+const month = String(now.getMonth() + 1).padStart(2, '0');
+const day = String(now.getDate()).padStart(2, '0');
+const defaultStart = `${year}-${month}-${day}T00:00`;
+const defaultEnd = `${year}-${month}-${day}T23:59`;
+
 const state = {
   filters: {
     gridId: '',
     buildingId: '',
     areaId: '',
-    startDate: '',
-    endDate: ''
+    startDate: defaultStart,
+    endDate: defaultEnd
   },
   pagination: {
     page: 1,
@@ -421,8 +428,8 @@ function setupActionButtons() {
       gridId: els.gridSelect.options[0]?.value || '',
       buildingId: '',
       areaId: '',
-      startDate: '',
-      endDate: ''
+      startDate: defaultStart,
+      endDate: defaultEnd
     };
     els.gridSelect.value = state.filters.gridId;
     els.startTimeInput.value = state.filters.startDate;
