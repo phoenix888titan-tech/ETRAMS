@@ -2,11 +2,20 @@
 
 const API_BASE = '';
 
+function getCurrentDateTimeLocal(isEndOfDay = false) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const time = isEndOfDay ? '23:59' : '00:00';
+  return `${year}-${month}-${day}T${time}`;
+}
+
 const state = {
   gridId: '',
   buildingId: '',
-  startDate: '2026-08-01T07:00',
-  endDate: '2026-08-13T15:00'
+  startDate: getCurrentDateTimeLocal(false),
+  endDate: getCurrentDateTimeLocal(true)
 };
 
 const els = {
@@ -181,8 +190,8 @@ function setupEvents() {
   });
 
   document.getElementById('btn-reset-filters').addEventListener('click', async () => {
-    state.startDate = '2026-08-01T07:00';
-    state.endDate = '2026-08-13T15:00';
+    state.startDate = getCurrentDateTimeLocal(false);
+    state.endDate = getCurrentDateTimeLocal(true);
     if (els.gridSelect.options.length > 0) {
       state.gridId = 'all';
       els.gridSelect.value = state.gridId;

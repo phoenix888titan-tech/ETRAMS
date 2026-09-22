@@ -2,10 +2,19 @@
 
 const API_BASE = '';
 
+function getCurrentDateTimeLocal(isEndOfDay = false) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const time = isEndOfDay ? '23:59' : '00:00';
+  return `${year}-${month}-${day}T${time}`;
+}
+
 const state = {
   gridId: '',
-  startDate: '2026-06-10T12:00',
-  endDate: '2026-06-13T17:00'
+  startDate: getCurrentDateTimeLocal(false),
+  endDate: getCurrentDateTimeLocal(true)
 };
 
 const els = {
@@ -118,8 +127,8 @@ function setupEvents() {
   });
 
   document.getElementById('btn-reset-filters').addEventListener('click', () => {
-    state.startDate = '2026-06-10T12:00';
-    state.endDate = '2026-06-13T17:00';
+    state.startDate = getCurrentDateTimeLocal(false);
+    state.endDate = getCurrentDateTimeLocal(true);
     state.gridId = 'all';
     els.gridSelect.value = state.gridId;
     els.startTimeInput.value = state.startDate;
