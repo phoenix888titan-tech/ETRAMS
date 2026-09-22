@@ -273,25 +273,25 @@ function FilterControlBar({ filters, setFilters, grids, buildings, areas }) {
   `;
 }
 
-function MeterDemandChart({ meters, loading }) {
+function AreaDemandChart({ buildingAreaData, loading }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  const totalPages = Math.max(1, Math.ceil(meters.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil((buildingAreaData || []).length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const paginatedMeters = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    return meters.slice(start, start + pageSize);
-  }, [meters, currentPage]);
+    return (buildingAreaData || []).slice(start, start + pageSize);
+  }, [buildingAreaData, currentPage]);
 
   useEffect(() => {
     if (!canvasRef.current || loading) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    const labels = paginatedMeters.map((m) => m.meter_code);
-    const values = paginatedMeters.map((m) => parseFloat(m.total_used || 0));
+    const labels = paginatedMeters.map((d) => `${d.buildingName} - ${d.areaName}` || 'Unknown Area');
+    const values = paginatedMeters.map((d) => parseFloat(d.totalKw || 0));
     const colors = paginatedMeters.map((_, i) => `hsl(${(i * 35) % 360}, 70%, 50%)`);
 
     chartRef.current = new Chart(canvasRef.current.getContext('2d'), {
@@ -319,7 +319,7 @@ function MeterDemandChart({ meters, loading }) {
           }
         },
         scales: {
-          x: { title: { display: true, text: 'Meters on Selected Floor/Area', color: '#6B7280', font: { size: 12 } }, grid: { display: false } },
+          x: { title: { display: true, text: 'Floor/Area in Selected Building', color: '#6B7280', font: { size: 12 } }, grid: { display: false } },
           y: { title: { display: true, text: 'KW Total', color: '#6B7280', font: { size: 12 } }, grid: { color: '#E5E7EB', borderDash: [4, 4] } }
         }
       }
@@ -346,7 +346,7 @@ function MeterDemandChart({ meters, loading }) {
           <div class="chart-icon-circle">🏢</div>
           <div class="chart-title-block">
             <h3>KW</h3>
-            <p>Meter Power Demand on Floor/Area</p>
+            <p>Area Power Demand in Building</p>
           </div>
         </div>
         <div class="chart-actions" style=${{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -366,7 +366,7 @@ function MeterDemandChart({ meters, loading }) {
   `;
 }
 
-function BuildingConsumptionChart({ meters, loading }) {
+function AreaConsumptionChart({ buildingAreaData, loading }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
 
@@ -374,9 +374,9 @@ function BuildingConsumptionChart({ meters, loading }) {
     if (!canvasRef.current || loading) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    const labels = (meters || []).map((m) => m.meter_code || 'Meter');
-    const values = (meters || []).map((m) => parseFloat(m.total_used || 0));
-    const sliceColors = (meters || []).map((_, i) => `hsl(${(i * 45) % 360}, 65%, 55%)`);
+    const labels = (buildingAreaData || []).map((d) => `${d.buildingName} - ${d.areaName}` || 'Unknown Area');
+    const values = (buildingAreaData || []).map((d) => parseFloat(d.totalKw || 0));
+    const sliceColors = (buildingAreaData || []).map((_, i) => `hsl(${(i * 45) % 360}, 65%, 55%)`);
 
 
     chartRef.current = new Chart(canvasRef.current.getContext('2d'), {
@@ -414,11 +414,11 @@ function BuildingConsumptionChart({ meters, loading }) {
     return () => {
       if (chartRef.current) chartRef.current.destroy();
     };
-  }, [meters, loading]);
+  }, [buildingAreaData, loading]);
 
   return html`
     <section class="card" id="BuildingConsumptionChart">
-      <div class="bottom-chart-title">Building KW Consumption</div>
+      <div class="bottom-chart-title">Area KW Consumption</div>
       <div class="bottom-chart-container">
         ${loading ? html`<div class="empty-state">Loading...</div>` : html`<canvas ref=${canvasRef} />`}
       </div>
@@ -631,9 +631,9 @@ function App() {
           </div>
           ${error ? html`<div class="error">${error.message || 'Failed to load data'}</div>` : null}
           <${FilterControlBar} filters=${filters} setFilters=${setFilters} grids=${grids} buildings=${buildings} areas=${areas} />
-          <${MeterDemandChart} meters=${meters} loading=${metersLoading} />
+          <${AreaDemandChart} buildingAreaData=${buildingAreaData} loading=${loading} />
           <div class="bottom-charts-row">
-            <${BuildingConsumptionChart} meters=${meters} loading=${metersLoading} />
+            <${AreaConsumptionChart} buildingAreaData=${buildingAreaData} loading=${loading} />
             <${MonthlyGridDemandChart} />
           </div>
           <${SummaryFooterBar} totalKw=${totalKw} />

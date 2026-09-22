@@ -617,7 +617,7 @@ app.get('/api/building-demand', async (req, res) => {
 
 app.get('/api/grid-demand', async (req, res) => {
   try {
-    const { start_date, end_date } = req.query;
+    const { start_date, end_date, grid_id } = req.query;
     
     let mrWhere = 'WHERE 1=1';
     const mrParams = [];
@@ -643,6 +643,13 @@ app.get('/api/grid-demand', async (req, res) => {
       )
     `;
 
+    let mainWhere = '';
+    const mainParams = [...mrParams];
+    if (grid_id) {
+      mainWhere = 'WHERE g.grid_id = ?';
+      mainParams.push(grid_id);
+    }
+
     const query = `
       ${cte}
       SELECT
@@ -656,11 +663,12 @@ app.get('/api/grid-demand', async (req, res) => {
       JOIN grids g ON b.grid_id = g.grid_id
       LEFT JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
       LEFT JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1
+      ${mainWhere}
       GROUP BY g.grid_id, g.grid_name, g.grid_color
       ORDER BY g.grid_id
     `;
 
-    const [rows] = await db.query(query, mrParams);
+    const [rows] = await db.query(query, mainParams);
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
