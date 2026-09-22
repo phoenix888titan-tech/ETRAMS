@@ -236,7 +236,7 @@ app.get('/api/meters', async (req, res) => {
       order = 'asc'
     } = req.query;
 
-    const pageLimit = Math.min(parseInt(limit, 10) || 25, 100);
+    const pageLimit = Math.min(parseInt(limit, 10) || 25, 10000);
     const offset = (Math.max(1, parseInt(page, 10) || 1) - 1) * pageLimit;
 
     let where = 'WHERE 1=1';
