@@ -867,21 +867,20 @@ app.get('/api/meter-readings', async (req, res) => {
     const [rows] = await db.query(`
       SELECT
         meter_id,
-        meter_code,
-        reading_datetime,
-        vll,
-        vln,
-        amps,
-        power_factor,
-        active_power,
-        freq,
-        reactive_power,
-        apparent_power,
-        total_energy,
-        status
-      FROM power_meters
+        DATE(reading_datetime) as reading_datetime,
+        AVG(vll) as vll,
+        AVG(vln) as vln,
+        AVG(amps) as amps,
+        AVG(power_factor) as power_factor,
+        AVG(active_power) as active_power,
+        AVG(freq) as freq,
+        AVG(reactive_power) as reactive_power,
+        AVG(apparent_power) as apparent_power,
+        MAX(total_energy) as total_energy
+      FROM meter_readings
       ${where}
-      ORDER BY reading_datetime ASC
+      GROUP BY meter_id, DATE(reading_datetime)
+      ORDER BY DATE(reading_datetime) ASC
     `, params);
 
     res.json(rows);
@@ -917,7 +916,7 @@ app.get('/api/meter-averages', async (req, res) => {
         AVG(amps) AS avg_amp,
         AVG(power_factor) AS avg_pf,
         AVG(active_power) AS avg_act_p
-      FROM power_meters
+      FROM meter_readings
       ${where}
     `, params);
 
