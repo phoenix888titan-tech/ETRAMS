@@ -255,24 +255,24 @@ function FilterControlBar({ filters, setFilters, grids }) {
   `;
 }
 
-function GridLineChart({ gridLoopData, loading }) {
+function GridLineChart({ gridData, loading }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
   const [page, setPage] = useState(1);
   const pageSize = 12;
 
-  const totalPages = Math.max(1, Math.ceil(gridLoopData.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(gridData.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    return gridLoopData.slice(start, start + pageSize);
-  }, [gridLoopData, currentPage]);
+    return gridData.slice(start, start + pageSize);
+  }, [gridData, currentPage]);
 
   useEffect(() => {
     if (!canvasRef.current || loading) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    const labels = paginatedData.map((d) => d.buildingName || d.gridName || 'Building');
+    const labels = paginatedData.map((d) => d.gridName || 'Grid');
     const values = paginatedData.map((d) => parseFloat(d.totalKw));
     const pointColors = paginatedData.map((d) => d.gridColor || '#3B82F6');
 
@@ -281,7 +281,7 @@ function GridLineChart({ gridLoopData, loading }) {
       data: {
         labels,
         datasets: [{
-          label: 'Total KW per Building',
+          label: 'Total KW per Grid',
           data: values,
           backgroundColor: pointColors,
           borderColor: pointColors,
@@ -304,7 +304,7 @@ function GridLineChart({ gridLoopData, loading }) {
         },
         scales: {
           x: {
-            title: { display: true, text: 'Building', color: '#6B7280', font: { size: 12 } },
+            title: { display: true, text: 'Grid', color: '#6B7280', font: { size: 12 } },
             grid: { display: false },
             ticks: { color: '#6B7280', font: { size: 10 }, autoSkip: false }
           },
@@ -334,7 +334,7 @@ function GridLineChart({ gridLoopData, loading }) {
   return html`
     <section class="card" id="GridLineChart">
       <div class="chart-header" style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-        <div class="chart-title">Grid Energy Demand Trend (Total KW per Building)</div>
+        <div class="chart-title">Grid Energy Demand Trend (Total KW per Grid)</div>
         <div class="chart-actions" style=${{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style=${{ display: 'flex', alignItems: 'center', gap: '4px', marginRight: '8px' }}>
             <button class="btn btn-text" disabled=${currentPage <= 1} onClick=${() => setPage((p) => Math.max(1, p - 1))}>Previous</button>
@@ -369,7 +369,7 @@ function BuildingButtonPanel({ buildings }) {
   `;
 }
 
-function BuildingConsumptionChart({ gridLoopData, loading }) {
+function GridConsumptionChart({ gridData, loading }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
 
@@ -377,9 +377,9 @@ function BuildingConsumptionChart({ gridLoopData, loading }) {
     if (!canvasRef.current || loading) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    const labels = gridLoopData.map((d) => d.buildingName || d.gridName || '');
-    const values = gridLoopData.map((d) => parseFloat(d.totalKw));
-    const colors = gridLoopData.map((d, i) => `hsl(${(i * 45) % 360}, 65%, 50%)`);
+    const labels = gridData.map((d) => d.gridName || '');
+    const values = gridData.map((d) => parseFloat(d.totalKw));
+    const colors = gridData.map((d, i) => `hsl(${(i * 45) % 360}, 65%, 50%)`);
 
     chartRef.current = new Chart(canvasRef.current.getContext('2d'), {
       type: 'pie',
@@ -416,11 +416,11 @@ function BuildingConsumptionChart({ gridLoopData, loading }) {
     return () => {
       if (chartRef.current) chartRef.current.destroy();
     };
-  }, [gridLoopData, loading]);
+  }, [gridData, loading]);
 
   return html`
-    <section class="card" id="BuildingConsumptionChart">
-      <div class="bottom-chart-title">Building KW Consumption (by Grid)</div>
+    <section class="card" id="GridConsumptionChart">
+      <div class="bottom-chart-title">Grid KW Consumption</div>
       <div class="bottom-chart-container">
         ${loading ? html`<div class="empty-state">Loading...</div>` : html`<canvas ref=${canvasRef} />`}
       </div>
@@ -542,7 +542,7 @@ function App() {
   });
 
   const [buildings, setBuildings] = useState([]);
-  const [gridLoopDemand, setGridLoopDemand] = useState([]);
+  const [gridDemand, setGridDemand] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -563,9 +563,10 @@ function App() {
   useEffect(() => {
     if (!filters.gridId) return;
     setLoading(true);
-    let url = `${API_BASE}/api/grid-loop-demand?grid_id=${filters.gridId}&start_date=${filters.startDate}&end_date=${filters.endDate}`;
+    let url = `${API_BASE}/api/grid-demand?start_date=${filters.startDate}&end_date=${filters.endDate}`;
+    if (filters.gridId && filters.gridId !== "all") url += `&grid_id=${filters.gridId}`;
     fetchJSON(url).then((data) => {
-      setGridLoopDemand(data);
+      setGridDemand(data);
       setLoading(false);
     }).catch((err) => {
       setError(err);
@@ -576,8 +577,8 @@ function App() {
   const selectedGridObj = grids.find((g) => String(g.id) === String(filters.gridId));
 
   const totalKw = useMemo(() => {
-    return gridLoopDemand.reduce((sum, d) => sum + parseFloat(d.totalKw || 0), 0);
-  }, [gridLoopDemand]);
+    return gridDemand.reduce((sum, d) => sum + parseFloat(d.totalKw || 0), 0);
+  }, [gridDemand]);
 
   const handleExportPDF = () => {
     if (contentRef.current) {
@@ -599,9 +600,9 @@ function App() {
           </div>
           ${error ? html`<div class="error">${error.message || 'Failed to load data'}</div>` : null}
           <${FilterControlBar} filters=${filters} setFilters=${setFilters} grids=${grids} />
-          <${GridLineChart} gridLoopData=${gridLoopDemand} loading=${loading} />
+          <${GridLineChart} gridData=${gridDemand} loading=${loading} />
           <div class="bottom-charts-row">
-            <${BuildingConsumptionChart} gridLoopData=${gridLoopDemand} loading=${loading} />
+            <${GridConsumptionChart} gridData=${gridDemand} loading=${loading} />
             <${MonthlyGridDemandChart} gridId=${filters.gridId} />
           </div>
           <${SummaryFooterBar} totalKw=${totalKw} />
