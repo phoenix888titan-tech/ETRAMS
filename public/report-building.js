@@ -232,6 +232,10 @@ async function init() {
   if (window.getSectionTitle && els.pageTitle) {
     els.pageTitle.textContent = window.getSectionTitle('buildingReport', 'Building Demand Report');
   }
+
+  els.startTimeInput.value = state.startDate;
+  els.endTimeInput.value = state.endDate;
+
   await loadGrids();
   setupEvents();
   loadBuildingReport();
