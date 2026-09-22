@@ -9,6 +9,15 @@ Chart.register(ChartDataLabels);
 const html = htm.bind(React.createElement);
 const API_BASE = '';
 
+function getDefaultDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+const defaultDateString = getDefaultDateString();
+
 // --- Icons ---
 const SettingsIcon = () => html`
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -282,7 +291,7 @@ function MeterDemandChart({ meters, loading }) {
     if (chartRef.current) chartRef.current.destroy();
 
     const labels = paginatedMeters.map((m) => m.meter_code);
-    const values = paginatedMeters.map((m) => parseFloat(m.active_power || 0));
+    const values = paginatedMeters.map((m) => parseFloat(m.total_used || 0));
     const colors = paginatedMeters.map((_, i) => `hsl(${(i * 35) % 360}, 70%, 50%)`);
 
     chartRef.current = new Chart(canvasRef.current.getContext('2d'), {
@@ -290,7 +299,7 @@ function MeterDemandChart({ meters, loading }) {
       data: {
         labels,
         datasets: [{
-          label: 'Active Power (KW)',
+          label: 'Total KW Consumption',
           data: values,
           backgroundColor: colors,
           borderRadius: 4,
@@ -366,7 +375,7 @@ function BuildingConsumptionChart({ meters, loading }) {
     if (chartRef.current) chartRef.current.destroy();
 
     const labels = (meters || []).map((m) => m.meter_code || 'Meter');
-    const values = (meters || []).map((m) => parseFloat(m.active_power || 0));
+    const values = (meters || []).map((m) => parseFloat(m.total_used || 0));
     const sliceColors = (meters || []).map((_, i) => `hsl(${(i * 45) % 360}, 65%, 55%)`);
 
 
@@ -522,8 +531,8 @@ function App() {
     gridId: '',
     buildingId: '',
     areaId: '',
-    startDate: '2026-06-10',
-    endDate: '2026-06-25'
+    startDate: defaultDateString,
+    endDate: defaultDateString
   });
 
   const [buildingAreaData, setBuildingAreaData] = useState([]);

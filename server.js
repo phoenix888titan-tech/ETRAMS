@@ -615,34 +615,49 @@ app.get('/api/building-demand', async (req, res) => {
 app.get('/api/grid-demand', async (req, res) => {
   try {
     const { start_date, end_date } = req.query;
-    let where = 'WHERE pm.reading_datetime IS NOT NULL';
-    const params = [];
-
+    
+    let mrWhere = 'WHERE 1=1';
+    const mrParams = [];
     if (start_date) {
-      where += ' AND DATE(pm.reading_datetime) >= ?';
-      params.push(start_date);
+      mrWhere += ' AND mr.reading_datetime >= ?';
+      mrParams.push(start_date.includes(' ') || start_date.includes('T') ? start_date.replace('T', ' ') : `${start_date} 00:00:00`);
     }
     if (end_date) {
-      where += ' AND DATE(pm.reading_datetime) <= ?';
-      params.push(end_date);
+      mrWhere += ' AND mr.reading_datetime <= ?';
+      mrParams.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
     }
 
-    const [rows] = await db.query(`
+    const cte = `
+      WITH RankedReadings AS (
+        SELECT 
+          mr.meter_id,
+          mr.current_reading,
+          mr.reading_datetime,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
+        FROM meter_readings mr
+        ${mrWhere}
+      )
+    `;
+
+    const query = `
+      ${cte}
       SELECT
-        DATE(pm.reading_datetime) AS date,
         g.grid_id AS gridId,
         g.grid_name AS gridName,
         g.grid_color AS gridColor,
-        SUM(pm.active_power) AS totalKw
+        SUM(COALESCE(last_read.current_reading, 0) - COALESCE(first_read.current_reading, 0)) AS totalKw
       FROM power_meters pm
       JOIN areas a ON pm.area_id = a.area_id
       JOIN buildings b ON a.building_id = b.building_id
       JOIN grids g ON b.grid_id = g.grid_id
-      ${where}
-      GROUP BY DATE(pm.reading_datetime), g.grid_id, g.grid_name, g.grid_color
-      ORDER BY DATE(pm.reading_datetime), g.grid_id
-    `, params);
+      LEFT JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
+      LEFT JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1
+      GROUP BY g.grid_id, g.grid_name, g.grid_color
+      ORDER BY g.grid_id
+    `;
 
+    const [rows] = await db.query(query, mrParams);
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
@@ -653,23 +668,41 @@ app.get('/api/grid-demand', async (req, res) => {
 app.get('/api/grid-loop-demand', async (req, res) => {
   try {
     const { grid_id, start_date, end_date } = req.query;
-    let where = 'WHERE pm.reading_datetime IS NOT NULL';
-    const params = [];
-
-    if (grid_id) {
-      where += ' AND g.grid_id = ?';
-      params.push(grid_id);
-    }
+    
+    let mrWhere = 'WHERE 1=1';
+    const mrParams = [];
     if (start_date) {
-      where += ' AND DATE(pm.reading_datetime) >= ?';
-      params.push(start_date);
+      mrWhere += ' AND mr.reading_datetime >= ?';
+      mrParams.push(start_date.includes(' ') || start_date.includes('T') ? start_date.replace('T', ' ') : `${start_date} 00:00:00`);
     }
     if (end_date) {
-      where += ' AND DATE(pm.reading_datetime) <= ?';
-      params.push(end_date);
+      mrWhere += ' AND mr.reading_datetime <= ?';
+      mrParams.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
     }
 
-    const [rows] = await db.query(`
+    let hierarchyWhere = 'WHERE 1=1';
+    const hierarchyParams = [];
+
+    if (grid_id) {
+      hierarchyWhere += ' AND g.grid_id = ?';
+      hierarchyParams.push(grid_id);
+    }
+
+    const cte = `
+      WITH RankedReadings AS (
+        SELECT 
+          mr.meter_id,
+          mr.current_reading,
+          mr.reading_datetime,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
+        FROM meter_readings mr
+        ${mrWhere}
+      )
+    `;
+
+    const query = `
+      ${cte}
       SELECT
         g.grid_id AS gridId,
         g.grid_name AS gridName,
@@ -677,16 +710,19 @@ app.get('/api/grid-loop-demand', async (req, res) => {
         b.building_id AS buildingId,
         b.building_code AS buildingCode,
         b.building_name AS buildingName,
-        SUM(pm.active_power) AS totalKw
+        SUM(COALESCE(last_read.current_reading, 0) - COALESCE(first_read.current_reading, 0)) AS totalKw
       FROM power_meters pm
       JOIN areas a ON pm.area_id = a.area_id
       JOIN buildings b ON a.building_id = b.building_id
       JOIN grids g ON b.grid_id = g.grid_id
-      ${where}
+      LEFT JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
+      LEFT JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1
+      ${hierarchyWhere}
       GROUP BY g.grid_id, g.grid_name, g.grid_color, b.building_id, b.building_code, b.building_name
       ORDER BY g.grid_id, b.building_id
-    `, params);
+    `;
 
+    const [rows] = await db.query(query, [...mrParams, ...hierarchyParams]);
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
@@ -697,47 +733,68 @@ app.get('/api/grid-loop-demand', async (req, res) => {
 app.get('/api/building-area-demand', async (req, res) => {
   try {
     const { grid_id, building_id, area_id, start_date, end_date } = req.query;
-    let where = 'WHERE pm.reading_datetime IS NOT NULL';
-    const params = [];
-
-    if (grid_id) {
-      where += ' AND g.grid_id = ?';
-      params.push(grid_id);
-    }
-    if (building_id) {
-      where += ' AND b.building_id = ?';
-      params.push(building_id);
-    }
-    if (area_id) {
-      where += ' AND a.area_id = ?';
-      params.push(area_id);
-    }
+    
+    let mrWhere = 'WHERE 1=1';
+    const mrParams = [];
     if (start_date) {
-      where += ' AND DATE(pm.reading_datetime) >= ?';
-      params.push(start_date);
+      mrWhere += ' AND mr.reading_datetime >= ?';
+      mrParams.push(start_date.includes(' ') || start_date.includes('T') ? start_date.replace('T', ' ') : `${start_date} 00:00:00`);
     }
     if (end_date) {
-      where += ' AND DATE(pm.reading_datetime) <= ?';
-      params.push(end_date);
+      mrWhere += ' AND mr.reading_datetime <= ?';
+      mrParams.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
     }
 
-    const [rows] = await db.query(`
+    let hierarchyWhere = 'WHERE 1=1';
+    const hierarchyParams = [];
+
+    if (grid_id) {
+      hierarchyWhere += ' AND g.grid_id = ?';
+      hierarchyParams.push(grid_id);
+    }
+    if (building_id) {
+      hierarchyWhere += ' AND b.building_id = ?';
+      hierarchyParams.push(building_id);
+    }
+    if (area_id) {
+      hierarchyWhere += ' AND a.area_id = ?';
+      hierarchyParams.push(area_id);
+    }
+
+    const cte = `
+      WITH RankedReadings AS (
+        SELECT 
+          mr.meter_id,
+          mr.current_reading,
+          mr.reading_datetime,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
+        FROM meter_readings mr
+        ${mrWhere}
+      )
+    `;
+
+    const query = `
+      ${cte}
       SELECT
         b.building_id AS buildingId,
         b.building_name AS buildingName,
         a.area_id AS areaId,
         a.area_name AS areaName,
         g.grid_color AS gridColor,
-        SUM(pm.active_power) AS totalKw
+        SUM(COALESCE(last_read.current_reading, 0) - COALESCE(first_read.current_reading, 0)) AS totalKw
       FROM power_meters pm
       JOIN areas a ON pm.area_id = a.area_id
       JOIN buildings b ON a.building_id = b.building_id
       JOIN grids g ON b.grid_id = g.grid_id
-      ${where}
+      LEFT JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
+      LEFT JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1
+      ${hierarchyWhere}
       GROUP BY b.building_id, b.building_name, a.area_id, a.area_name, g.grid_color
       ORDER BY b.building_name, a.area_name
-    `, params);
+    `;
 
+    const [rows] = await db.query(query, [...mrParams, ...hierarchyParams]);
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);

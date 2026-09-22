@@ -9,6 +9,15 @@ Chart.register(ChartDataLabels);
 const html = htm.bind(React.createElement);
 const API_BASE = '';
 
+function getDefaultDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+const defaultDateString = getDefaultDateString();
+
 // --- Icons ---
 const SettingsIcon = () => html`
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -528,8 +537,8 @@ function App() {
   const [grids, setGrids] = useState([]);
   const [filters, setFilters] = useState({
     gridId: '',
-    startDate: '2026-06-10',
-    endDate: '2026-06-25'
+    startDate: defaultDateString,
+    endDate: defaultDateString
   });
 
   const [buildings, setBuildings] = useState([]);
