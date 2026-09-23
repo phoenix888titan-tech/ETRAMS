@@ -76,7 +76,7 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts, please try again after 15 minutes.' }
 });
 
-app.post('/api/auth/login', loginLimiter, async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body || {};
     if (!username || !password) {
