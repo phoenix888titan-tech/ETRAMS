@@ -43,7 +43,7 @@ function getSessionUser(req) {
 function setSession(res, user) {
   const token = crypto.randomBytes(32).toString('hex');
   sessions.set(token, { user, expires: Date.now() + 12 * 60 * 60 * 1000 });
-  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${token}; HttpOnly; Secure; Path=/; SameSite=Lax`);
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax`);
 }
 
 function clearSession(req, res) {
