@@ -87,7 +87,7 @@ app.post('/api/auth/login', async (req, res) => {
       [username]
     );
     const user = rows[0];
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    if (!user || !user.password_hash || !(await bcrypt.compare(password, user.password_hash))) {
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
     await db.query('UPDATE users SET last_login = NOW() WHERE user_id = ?', [user.user_id]);
