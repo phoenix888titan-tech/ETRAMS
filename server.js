@@ -96,7 +96,7 @@ app.post('/api/auth/login', async (req, res) => {
     res.json(sessionUser);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -155,7 +155,7 @@ app.get('/api/filters', async (req, res) => {
     });
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -214,7 +214,7 @@ app.get('/api/summary', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -360,7 +360,7 @@ app.get('/api/meters', async (req, res) => {
     });
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -479,7 +479,7 @@ app.get('/api/meters/csv', async (req, res) => {
     res.send(csvRows.join('\n'));
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -495,7 +495,7 @@ app.get('/api/grids', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -504,7 +504,7 @@ app.get('/api/loops', async (req, res) => {
     res.json([]);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -533,7 +533,7 @@ app.get('/api/buildings', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -562,7 +562,7 @@ app.get('/api/areas', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -611,7 +611,7 @@ app.get('/api/building-demand', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -672,7 +672,7 @@ app.get('/api/grid-demand', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -737,7 +737,7 @@ app.get('/api/grid-loop-demand', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -809,7 +809,7 @@ app.get('/api/building-area-demand', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -841,7 +841,7 @@ app.get('/api/monthly-grid-kw', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -886,7 +886,7 @@ app.get('/api/meter-readings', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -923,7 +923,7 @@ app.get('/api/meter-averages', async (req, res) => {
     res.json(rows[0] || {});
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -935,7 +935,7 @@ function sendCrudError(res, err) {
   if (err && err.code === 'ER_DUP_ENTRY') {
     return res.status(409).json({ error: 'A record with this code already exists.' });
   }
-  res.status(500).json({ error: 'Internal Server Error' });
+  res.status(500).json({ error: 'Server Error: ' + err.message });
 }
 
 function requireFields(body, fields) {
@@ -961,7 +961,7 @@ app.get('/api/settings/grids', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -1003,7 +1003,7 @@ app.delete('/api/settings/grids/:id', async (req, res) => {
     res.json({ id: parseInt(req.params.id, 10), status: 'inactive' });
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -1025,7 +1025,7 @@ app.get('/api/settings/loops', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -1067,7 +1067,7 @@ app.delete('/api/settings/loops/:id', async (req, res) => {
     res.json({ id: parseInt(req.params.id, 10), status: 'inactive' });
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -1091,7 +1091,7 @@ app.get('/api/settings/buildings', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -1138,7 +1138,7 @@ app.delete('/api/settings/buildings/:id', async (req, res) => {
     res.json({ id: parseInt(req.params.id, 10), status: 'inactive' });
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -1162,7 +1162,7 @@ app.get('/api/settings/areas', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -1204,7 +1204,7 @@ app.delete('/api/settings/areas/:id', async (req, res) => {
     res.json({ id: parseInt(req.params.id, 10), status: 'inactive' });
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -1230,7 +1230,7 @@ app.get('/api/settings/meters', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -1272,7 +1272,7 @@ app.delete('/api/settings/meters/:id', async (req, res) => {
     res.json({ id: parseInt(req.params.id, 10), deleted: true });
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
@@ -1293,7 +1293,7 @@ app.get('/api/settings/users', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
 
