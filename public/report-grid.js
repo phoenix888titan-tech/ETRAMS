@@ -14,11 +14,13 @@ function getCurrentDateTimeLocal(isEndOfDay = false) {
 const state = {
   gridId: '',
   startDate: getCurrentDateTimeLocal(false),
-  endDate: getCurrentDateTimeLocal(true)
+  endDate: getCurrentDateTimeLocal(true),
+  meterType: 'main'
 };
 
 const els = {
   gridSelect: document.getElementById('filter-grid'),
+  meterTypeSelect: document.getElementById('filter-meter-type'),
   startTimeInput: document.getElementById('filter-start-time'),
   endTimeInput: document.getElementById('filter-end-time'),
   outGrid: document.getElementById('out-selected-grid'),
@@ -125,6 +127,12 @@ function setupEvents() {
     state.endDate = els.endTimeInput.value;
     loadGridReport();
   });
+  if (els.meterTypeSelect) {
+    els.meterTypeSelect.addEventListener('change', () => {
+      state.meterType = els.meterTypeSelect.value;
+      loadGridReport();
+    });
+  }
 
   document.getElementById('btn-reset-filters').addEventListener('click', () => {
     state.startDate = getCurrentDateTimeLocal(false);
@@ -132,6 +140,7 @@ function setupEvents() {
     state.gridId = 'all';
     els.gridSelect.value = state.gridId;
     els.startTimeInput.value = state.startDate;
+  if(els.meterTypeSelect) els.meterTypeSelect.value = state.meterType;
     els.endTimeInput.value = state.endDate;
     loadGridReport();
   });
@@ -165,6 +174,7 @@ async function init() {
   }
   
   els.startTimeInput.value = state.startDate;
+  if(els.meterTypeSelect) els.meterTypeSelect.value = state.meterType;
   els.endTimeInput.value = state.endDate;
 
   await loadGrids();

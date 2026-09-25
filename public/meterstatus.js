@@ -302,6 +302,14 @@ function FilterControlBar({ filters, setFilters, grids, buildings, areas, meters
             ${areas.map((a) => html`<option key=${a.id} value=${a.id}>${a.name}</option>`)}
           </select>
         </div>
+                <div class="filter-group">
+          <label for="filter-meter-type">Meter Type</label>
+          <select id="filter-meter-type" value=${filters.meterType} onChange=${(e) => setFilters((prev) => ({ ...prev, meterType: e.target.value }))}>
+            <option value="main">Main</option>
+            <option value="submeter">Submeter</option>
+            <option value="backup">Backup</option>
+          </select>
+        </div>
         <div class="filter-group">
           <label for="filter-meter">Select Meter</label>
           <select id="filter-meter" value=${filters.meterId} onChange=${(e) => setFilters((prev) => ({ ...prev, meterId: e.target.value }))}>
@@ -581,7 +589,8 @@ function App() {
     buildingId: '',
     areaId: '',
     meterId: '',
-    lookback: '30'
+    lookback: '30',
+    meterType: 'main'
   });
   const [activeParam, setActiveParam] = useState('vll');
 
@@ -628,7 +637,7 @@ function App() {
       setMeters([]);
       return;
     }
-    let url = `${API_BASE}/api/meters?building_id=${filters.buildingId}&limit=500`;
+    let url = `${API_BASE}/api/meters?building_id=${filters.buildingId}&limit=500&meter_type=${filters.meterType}`;
     if (filters.areaId) url += `&area_id=${filters.areaId}`;
     fetchJSON(url)
       .then((res) => {
@@ -639,7 +648,7 @@ function App() {
         }
       })
       .catch(setError);
-  }, [filters.buildingId, filters.areaId]);
+  }, [filters.buildingId, filters.areaId, filters.meterType]);
 
   useEffect(() => {
     if (!filters.meterId) {

@@ -15,7 +15,8 @@ const state = {
   gridId: '',
   buildingId: '',
   startDate: getCurrentDateTimeLocal(false),
-  endDate: getCurrentDateTimeLocal(true)
+  endDate: getCurrentDateTimeLocal(true),
+  meterType: 'main'
 };
 
 const els = {
@@ -188,6 +189,12 @@ function setupEvents() {
     state.endDate = els.endTimeInput.value;
     loadBuildingReport();
   });
+  if (els.meterTypeSelect) {
+    els.meterTypeSelect.addEventListener('change', () => {
+      state.meterType = els.meterTypeSelect.value;
+      loadBuildingReport();
+    });
+  }
 
   document.getElementById('btn-reset-filters').addEventListener('click', async () => {
     state.startDate = getCurrentDateTimeLocal(false);
@@ -198,6 +205,7 @@ function setupEvents() {
       await loadBuildings(state.gridId);
     }
     els.startTimeInput.value = state.startDate;
+  if(els.meterTypeSelect) els.meterTypeSelect.value = state.meterType;
     els.endTimeInput.value = state.endDate;
     loadBuildingReport();
   });
@@ -234,6 +242,7 @@ async function init() {
   }
 
   els.startTimeInput.value = state.startDate;
+  if(els.meterTypeSelect) els.meterTypeSelect.value = state.meterType;
   els.endTimeInput.value = state.endDate;
 
   await loadGrids();
