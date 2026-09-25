@@ -891,35 +891,36 @@ app.get('/api/meter-readings', async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameter: meter_id' });
     }
 
-    let where = 'WHERE meter_id = ? AND reading_datetime IS NOT NULL';
+    let where = "WHERE mr.meter_id = ? AND mr.reading_datetime IS NOT NULL AND pm.meter_type = 'main'";
     const params = [meter_id];
 
     if (start_date) {
-      where += ' AND reading_datetime >= ?';
+      where += ' AND mr.reading_datetime >= ?';
       params.push(start_date);
     }
     if (end_date) {
-      where += ' AND reading_datetime <= ?';
+      where += ' AND mr.reading_datetime <= ?';
       params.push(`${end_date} 23:59:59`);
     }
 
     const [rows] = await db.query(`
       SELECT
-        meter_id,
-        DATE(reading_datetime) as reading_datetime,
-        AVG(vll) as vll,
-        AVG(vln) as vln,
-        AVG(amps) as amps,
-        AVG(power_factor) as power_factor,
-        AVG(active_power) as active_power,
-        AVG(freq) as freq,
-        AVG(reactive_power) as reactive_power,
-        AVG(apparent_power) as apparent_power,
-        MAX(total_energy) as total_energy
-      FROM meter_readings
+        mr.meter_id,
+        DATE(mr.reading_datetime) as reading_datetime,
+        AVG(mr.vll) as vll,
+        AVG(mr.vln) as vln,
+        AVG(mr.amps) as amps,
+        AVG(mr.power_factor) as power_factor,
+        AVG(mr.active_power) as active_power,
+        AVG(mr.freq) as freq,
+        AVG(mr.reactive_power) as reactive_power,
+        AVG(mr.apparent_power) as apparent_power,
+        MAX(mr.total_energy) as total_energy
+      FROM meter_readings mr
+      JOIN power_meters pm ON mr.meter_id = pm.meter_id
       ${where}
-      GROUP BY meter_id, DATE(reading_datetime)
-      ORDER BY DATE(reading_datetime) ASC
+      GROUP BY mr.meter_id, DATE(mr.reading_datetime)
+      ORDER BY DATE(mr.reading_datetime) ASC
     `, params);
 
     res.json(rows);
@@ -936,26 +937,27 @@ app.get('/api/meter-averages', async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameter: meter_id' });
     }
 
-    let where = 'WHERE meter_id = ? AND reading_datetime IS NOT NULL';
+    let where = "WHERE mr.meter_id = ? AND mr.reading_datetime IS NOT NULL AND pm.meter_type = 'main'";
     const params = [meter_id];
 
     if (start_date) {
-      where += ' AND reading_datetime >= ?';
+      where += ' AND mr.reading_datetime >= ?';
       params.push(start_date);
     }
     if (end_date) {
-      where += ' AND reading_datetime <= ?';
+      where += ' AND mr.reading_datetime <= ?';
       params.push(`${end_date} 23:59:59`);
     }
 
     const [rows] = await db.query(`
       SELECT
-        AVG(vll) AS avg_vll,
-        AVG(vln) AS avg_vln,
-        AVG(amps) AS avg_amp,
-        AVG(power_factor) AS avg_pf,
-        AVG(active_power) AS avg_act_p
-      FROM meter_readings
+        AVG(mr.vll) AS avg_vll,
+        AVG(mr.vln) AS avg_vln,
+        AVG(mr.amps) AS avg_amp,
+        AVG(mr.power_factor) AS avg_pf,
+        AVG(mr.active_power) AS avg_act_p
+      FROM meter_readings mr
+      JOIN power_meters pm ON mr.meter_id = pm.meter_id
       ${where}
     `, params);
 
