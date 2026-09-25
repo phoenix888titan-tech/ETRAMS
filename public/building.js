@@ -260,10 +260,6 @@ function FilterControlBar({ filters, setFilters, grids, buildings, areas }) {
             ${areas.map((a) => html`<option key=${a.id} value=${a.id}>${a.name}</option>`)}
           </select>
         </div>
-        <div class="filter-group">
-          <label for="filter-start">Start Date</label>
-          <input type="date" id="filter-start" value=${filters.startDate} onChange=${(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))} />
-        </div>
                 <div class="filter-group">
           <label for="filter-meter-type">Meter Type</label>
           <select id="filter-meter-type" value=${filters.meterType} onChange=${(e) => setFilters((prev) => ({ ...prev, meterType: e.target.value }))}>
@@ -271,6 +267,10 @@ function FilterControlBar({ filters, setFilters, grids, buildings, areas }) {
             <option value="submeter">Submeter</option>
             <option value="backup">Backup</option>
           </select>
+        </div>
+        <div class="filter-group">
+          <label for="filter-start">Start Date</label>
+          <input type="date" id="filter-start" value=${filters.startDate} onChange=${(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))} />
         </div>
         <div class="filter-group">
           <label for="filter-end">End Date</label>
