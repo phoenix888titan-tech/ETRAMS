@@ -272,7 +272,7 @@ function GridLineChart({ gridData, loading }) {
     if (!canvasRef.current || loading) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    const labels = paginatedData.map((d) => d.gridName || 'Grid');
+    const labels = paginatedData.map((d) => d.buildingName || d.gridName || 'Grid');
     const values = paginatedData.map((d) => parseFloat(d.totalKw));
     const pointColors = paginatedData.map((d) => d.gridColor || '#3B82F6');
 
@@ -377,7 +377,7 @@ function GridConsumptionChart({ gridData, loading }) {
     if (!canvasRef.current || loading) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    const labels = gridData.map((d) => d.gridName || '');
+    const labels = gridData.map((d) => d.buildingName || d.gridName || '');
     const values = gridData.map((d) => parseFloat(d.totalKw));
     const colors = gridData.map((d, i) => `hsl(${(i * 45) % 360}, 65%, 50%)`);
 
@@ -563,7 +563,7 @@ function App() {
   useEffect(() => {
     if (!filters.gridId) return;
     setLoading(true);
-    let url = `${API_BASE}/api/grid-demand?start_date=${filters.startDate}&end_date=${filters.endDate}`;
+    let url = `${API_BASE}/api/grid-loop-demand?start_date=${filters.startDate}&end_date=${filters.endDate}`;
     if (filters.gridId && filters.gridId !== "all") url += `&grid_id=${filters.gridId}`;
     fetchJSON(url).then((data) => {
       setGridDemand(data);
