@@ -599,7 +599,7 @@ function App() {
       .catch(() => {
         setMetersLoading(false);
       });
-  }, [filters.gridId, filters.buildingId, filters.areaId]);
+  }, [filters.gridId, filters.buildingId, filters.areaId, filters.startDate, filters.endDate]);
 
   const selectedGridObj = grids.find((g) => String(g.id) === String(filters.gridId));
   const selectedBuildingObj = buildings.find((b) => String(b.id) === String(filters.buildingId));
