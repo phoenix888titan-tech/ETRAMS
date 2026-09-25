@@ -163,7 +163,7 @@ app.get('/api/filters', async (req, res) => {
 app.get('/api/summary', async (req, res) => {
   try {
     const { grid_id, building_id, area_id, status, month, year, start_date, end_date } = req.query;
-    let where = \"WHERE pm.meter_type = 'main'\";
+    let where = "WHERE pm.meter_type = 'main'";
     const params = [];
 
     if (grid_id) {
@@ -259,7 +259,7 @@ app.get('/api/meters', async (req, res) => {
       params.push(year);
     }
 
-    let hierarchyWhere = \"WHERE pm.meter_type = 'main'\";
+    let hierarchyWhere = "WHERE pm.meter_type = 'main'";
     const hierarchyParams = [];
 
     if (grid_id) {
@@ -388,7 +388,7 @@ app.get('/api/meters/csv', async (req, res) => {
       params.push(year);
     }
 
-    let hierarchyWhere = \"WHERE pm.meter_type = 'main'\";
+    let hierarchyWhere = "WHERE pm.meter_type = 'main'";
     const hierarchyParams = [];
 
     if (grid_id) {
@@ -711,7 +711,7 @@ app.get('/api/grid-loop-demand', async (req, res) => {
       mrParams.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
     }
 
-    let hierarchyWhere = \"WHERE pm.meter_type = 'main'\";
+    let hierarchyWhere = "WHERE pm.meter_type = 'main'";
     const hierarchyParams = [];
 
     if (grid_id) {
@@ -776,7 +776,7 @@ app.get('/api/building-area-demand', async (req, res) => {
       mrParams.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
     }
 
-    let hierarchyWhere = \"WHERE pm.meter_type = 'main'\";
+    let hierarchyWhere = "WHERE pm.meter_type = 'main'";
     const hierarchyParams = [];
 
     if (grid_id) {
