@@ -15,7 +15,8 @@ const state = {
     buildingId: '',
     areaId: '',
     startDate: defaultStart,
-    endDate: defaultEnd
+    endDate: defaultEnd,
+    meterType: 'main'
   },
   pagination: {
     page: 1,
@@ -33,6 +34,7 @@ const els = {
   gridSelect: document.getElementById('filter-grid'),
   buildingSelect: document.getElementById('filter-building'),
   areaSelect: document.getElementById('filter-area'),
+  meterTypeSelect: document.getElementById('filter-meter-type'),
   startTimeInput: document.getElementById('filter-start-time'),
   endTimeInput: document.getElementById('filter-end-time'),
   summaryTotal: document.getElementById('summary-total'),
@@ -132,6 +134,7 @@ async function loadSummary() {
     if (state.filters.areaId) params.set('area_id', state.filters.areaId);
     if (state.filters.startDate) params.set('start_date', state.filters.startDate);
     if (state.filters.endDate) params.set('end_date', state.filters.endDate);
+    if (state.filters.meterType) params.set('meter_type', state.filters.meterType);
 
     const res = await fetch(`${API_BASE}/api/summary?${params}`);
     if (!res.ok) throw new Error('Failed to load summary');
@@ -153,6 +156,7 @@ async function loadMeters() {
     if (state.filters.areaId) params.set('area_id', state.filters.areaId);
     if (state.filters.startDate) params.set('start_date', state.filters.startDate);
     if (state.filters.endDate) params.set('end_date', state.filters.endDate);
+    if (state.filters.meterType) params.set('meter_type', state.filters.meterType);
 
     params.set('page', state.pagination.page);
     params.set('limit', state.pagination.limit);
@@ -240,6 +244,12 @@ function setupFilters() {
     refresh();
   });
 
+  
+  els.meterTypeSelect.addEventListener('change', () => {
+    state.filters.meterType = els.meterTypeSelect.value;
+    state.pagination.page = 1;
+    refresh();
+  });
   els.areaSelect.addEventListener('change', () => {
     state.filters.areaId = els.areaSelect.value;
     state.pagination.page = 1;
@@ -310,6 +320,7 @@ async function exportFullPDF() {
     if (state.filters.areaId) params.set('area_id', state.filters.areaId);
     if (state.filters.startDate) params.set('start_date', state.filters.startDate);
     if (state.filters.endDate) params.set('end_date', state.filters.endDate);
+    if (state.filters.meterType) params.set('meter_type', state.filters.meterType);
     params.set('limit', '5000');
     params.set('page', '1');
 
@@ -418,6 +429,7 @@ function setupActionButtons() {
     if (state.filters.areaId) params.set('area_id', state.filters.areaId);
     if (state.filters.startDate) params.set('start_date', state.filters.startDate);
     if (state.filters.endDate) params.set('end_date', state.filters.endDate);
+    if (state.filters.meterType) params.set('meter_type', state.filters.meterType);
     window.open(`${API_BASE}/api/meters/csv?${params}`, '_blank');
   });
 
@@ -429,7 +441,8 @@ function setupActionButtons() {
       buildingId: '',
       areaId: '',
       startDate: defaultStart,
-      endDate: defaultEnd
+      endDate: defaultEnd,
+      meterType: 'main'
     };
     els.gridSelect.value = state.filters.gridId;
     els.startTimeInput.value = state.filters.startDate;
