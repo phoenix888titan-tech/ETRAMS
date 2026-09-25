@@ -162,9 +162,9 @@ app.get('/api/filters', async (req, res) => {
 // Get summary counts
 app.get('/api/summary', async (req, res) => {
   try {
-    const { grid_id, building_id, area_id, status, month, year, start_date, end_date } = req.query;
-    let where = "WHERE pm.meter_type = 'main'";
-    const params = [];
+    const { grid_id, building_id, area_id, status, month, year, start_date, end_date, meter_type = 'main' } = req.query;
+    let where = "WHERE pm.meter_type = ?";
+    const params = [meter_type];
 
     if (grid_id) {
       where += ' AND g.grid_id = ?';
@@ -221,20 +221,7 @@ app.get('/api/summary', async (req, res) => {
 // Get paginated meters
 app.get('/api/meters', async (req, res) => {
   try {
-    const {
-      grid_id,
-      building_id,
-      area_id,
-      status,
-      month,
-      year,
-      start_date,
-      end_date,
-      page = 1,
-      limit = 25,
-      sort = 'meter_id',
-      order = 'asc'
-    } = req.query;
+    const { grid_id, building_id, area_id, status, month, year, start_date, end_date, meter_type = 'main', page = 1, limit = 25, sort = 'meter_id', order = 'asc' } = req.query;
 
     const pageLimit = Math.min(parseInt(limit, 10) || 25, 10000);
     const offset = (Math.max(1, parseInt(page, 10) || 1) - 1) * pageLimit;
@@ -259,8 +246,8 @@ app.get('/api/meters', async (req, res) => {
       params.push(year);
     }
 
-    let hierarchyWhere = "WHERE pm.meter_type = 'main'";
-    const hierarchyParams = [];
+    let hierarchyWhere = "WHERE pm.meter_type = ?";
+    const hierarchyParams = [meter_type];
 
     if (grid_id) {
       hierarchyWhere += ' AND g.grid_id = ?';
@@ -366,7 +353,7 @@ app.get('/api/meters', async (req, res) => {
 
 app.get('/api/meters/csv', async (req, res) => {
   try {
-    const { grid_id, building_id, area_id, status, month, year, start_date, end_date } = req.query;
+    const { grid_id, building_id, area_id, status, month, year, start_date, end_date, meter_type = 'main' } = req.query;
 
     let where = 'WHERE 1=1';
     const params = [];
@@ -388,8 +375,8 @@ app.get('/api/meters/csv', async (req, res) => {
       params.push(year);
     }
 
-    let hierarchyWhere = "WHERE pm.meter_type = 'main'";
-    const hierarchyParams = [];
+    let hierarchyWhere = "WHERE pm.meter_type = ?";
+    const hierarchyParams = [meter_type];
 
     if (grid_id) {
       hierarchyWhere += ' AND g.grid_id = ?';
@@ -568,7 +555,7 @@ app.get('/api/areas', async (req, res) => {
 
 app.get('/api/building-demand', async (req, res) => {
   try {
-    const { grid_id, building_id, area_id, start_date, end_date } = req.query;
+    const { grid_id, building_id, area_id, start_date, end_date, meter_type = 'main' } = req.query;
     
     let mrWhere = 'WHERE 1=1';
     const mrParams = [];
@@ -594,8 +581,8 @@ app.get('/api/building-demand', async (req, res) => {
       )
     `;
 
-    let mainWhere = "WHERE pm.meter_type = 'main'";
-    const mainParams = [...mrParams];
+    let mainWhere = "WHERE pm.meter_type = ?";
+    const mainParams = [...mrParams, meter_type];
     if (grid_id) {
       mainWhere += ' AND g.grid_id = ?';
       mainParams.push(grid_id);
@@ -637,7 +624,7 @@ app.get('/api/building-demand', async (req, res) => {
 
 app.get('/api/grid-demand', async (req, res) => {
   try {
-    const { start_date, end_date, grid_id } = req.query;
+    const { start_date, end_date, grid_id, meter_type = 'main' } = req.query;
     
     let mrWhere = 'WHERE 1=1';
     const mrParams = [];
@@ -663,8 +650,8 @@ app.get('/api/grid-demand', async (req, res) => {
       )
     `;
 
-    let mainWhere = "WHERE pm.meter_type = 'main'";
-    const mainParams = [...mrParams];
+    let mainWhere = "WHERE pm.meter_type = ?";
+    const mainParams = [...mrParams, meter_type];
     if (grid_id) {
       mainWhere += ' AND g.grid_id = ?';
       mainParams.push(grid_id);
@@ -698,7 +685,7 @@ app.get('/api/grid-demand', async (req, res) => {
 
 app.get('/api/grid-loop-demand', async (req, res) => {
   try {
-    const { grid_id, start_date, end_date } = req.query;
+    const { grid_id, start_date, end_date, meter_type = 'main' } = req.query;
     
     let mrWhere = 'WHERE 1=1';
     const mrParams = [];
@@ -711,8 +698,8 @@ app.get('/api/grid-loop-demand', async (req, res) => {
       mrParams.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
     }
 
-    let hierarchyWhere = "WHERE pm.meter_type = 'main'";
-    const hierarchyParams = [];
+    let hierarchyWhere = "WHERE pm.meter_type = ?";
+    const hierarchyParams = [meter_type];
 
     if (grid_id) {
       hierarchyWhere += ' AND g.grid_id = ?';
@@ -763,7 +750,7 @@ app.get('/api/grid-loop-demand', async (req, res) => {
 
 app.get('/api/building-area-demand', async (req, res) => {
   try {
-    const { grid_id, building_id, area_id, start_date, end_date } = req.query;
+    const { grid_id, building_id, area_id, start_date, end_date, meter_type = 'main' } = req.query;
     
     let mrWhere = 'WHERE 1=1';
     const mrParams = [];
@@ -776,8 +763,8 @@ app.get('/api/building-area-demand', async (req, res) => {
       mrParams.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
     }
 
-    let hierarchyWhere = "WHERE pm.meter_type = 'main'";
-    const hierarchyParams = [];
+    let hierarchyWhere = "WHERE pm.meter_type = ?";
+    const hierarchyParams = [meter_type];
 
     if (grid_id) {
       hierarchyWhere += ' AND g.grid_id = ?';
@@ -835,7 +822,7 @@ app.get('/api/building-area-demand', async (req, res) => {
 
 app.get('/api/monthly-grid-kw', async (req, res) => {
   try {
-    const { year, grid_id } = req.query;
+    const { year, grid_id, meter_type = 'main' } = req.query;
     const targetYear = year || new Date().getFullYear();
     
     const cte = `
@@ -852,8 +839,8 @@ app.get('/api/monthly-grid-kw', async (req, res) => {
       )
     `;
 
-    let mainWhere = "WHERE pm.meter_type = 'main'";
-    const mainParams = [targetYear];
+    let mainWhere = "WHERE pm.meter_type = ?";
+    const mainParams = [targetYear, meter_type];
     if (grid_id) {
       mainWhere += ' AND g.grid_id = ?';
       mainParams.push(grid_id);

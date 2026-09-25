@@ -538,7 +538,8 @@ function App() {
   const [filters, setFilters] = useState({
     gridId: '',
     startDate: defaultDateString,
-    endDate: defaultDateString
+    endDate: defaultDateString,
+    meterType: 'main'
   });
 
   const [buildings, setBuildings] = useState([]);
@@ -563,7 +564,7 @@ function App() {
   useEffect(() => {
     if (!filters.gridId) return;
     setLoading(true);
-    let url = `${API_BASE}/api/grid-loop-demand?start_date=${filters.startDate}&end_date=${filters.endDate}`;
+    let url = `${API_BASE}/api/grid-loop-demand?start_date=${filters.startDate}&end_date=${filters.endDate}&meter_type=${filters.meterType}`;
     if (filters.gridId && filters.gridId !== "all") url += `&grid_id=${filters.gridId}`;
     fetchJSON(url).then((data) => {
       setGridDemand(data);
@@ -572,7 +573,7 @@ function App() {
       setError(err);
       setLoading(false);
     });
-  }, [filters.gridId, filters.startDate, filters.endDate]);
+  }, [filters.gridId, filters.startDate, filters.endDate, filters.meterType]);
 
   const selectedGridObj = grids.find((g) => String(g.id) === String(filters.gridId));
 

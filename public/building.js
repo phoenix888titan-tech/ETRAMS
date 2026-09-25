@@ -532,7 +532,8 @@ function App() {
     buildingId: '',
     areaId: '',
     startDate: defaultDateString,
-    endDate: defaultDateString
+    endDate: defaultDateString,
+    meterType: 'main'
   });
 
   const [buildingAreaData, setBuildingAreaData] = useState([]);
@@ -574,7 +575,7 @@ function App() {
   useEffect(() => {
     if (!filters.gridId || !filters.buildingId) return;
     setLoading(true);
-    let url = `${API_BASE}/api/building-area-demand?grid_id=${filters.gridId}&building_id=${filters.buildingId}&start_date=${filters.startDate}&end_date=${filters.endDate}`;
+    let url = `${API_BASE}/api/building-area-demand?grid_id=${filters.gridId}&building_id=${filters.buildingId}&start_date=${filters.startDate}&end_date=${filters.endDate}&meter_type=${filters.meterType}`;
     if (filters.areaId) url += `&area_id=${filters.areaId}`;
     fetchJSON(url).then((data) => {
       setBuildingAreaData(data);
@@ -583,12 +584,12 @@ function App() {
       setError(err);
       setLoading(false);
     });
-  }, [filters.gridId, filters.buildingId, filters.areaId, filters.startDate, filters.endDate]);
+  }, [filters.gridId, filters.buildingId, filters.areaId, filters.startDate, filters.endDate, filters.meterType]);
 
   useEffect(() => {
     if (!filters.gridId || !filters.buildingId) return;
     setMetersLoading(true);
-    let url = `${API_BASE}/api/meters?grid_id=${filters.gridId}&building_id=${filters.buildingId}&limit=1000&start_date=${filters.startDate}&end_date=${filters.endDate}`;
+    let url = `${API_BASE}/api/meters?grid_id=${filters.gridId}&building_id=${filters.buildingId}&limit=1000&start_date=${filters.startDate}&end_date=${filters.endDate}&meter_type=${filters.meterType}`;
     if (filters.areaId) url += `&area_id=${filters.areaId}`;
 
     fetchJSON(url)
@@ -599,7 +600,7 @@ function App() {
       .catch(() => {
         setMetersLoading(false);
       });
-  }, [filters.gridId, filters.buildingId, filters.areaId, filters.startDate, filters.endDate]);
+  }, [filters.gridId, filters.buildingId, filters.areaId, filters.startDate, filters.endDate, filters.meterType]);
 
   const selectedGridObj = grids.find((g) => String(g.id) === String(filters.gridId));
   const selectedBuildingObj = buildings.find((b) => String(b.id) === String(filters.buildingId));
