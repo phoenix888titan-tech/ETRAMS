@@ -1,7 +1,26 @@
 /* ADMU Energy Management System Dashboard Scripts */
 
 // --- Constants & Grid Metadata ---
+const COLORS = {
+  katipunan1: '#E67E22',
+  katipunan2: '#E74C3C',
+  katipunan3: '#F1C40F',
+  barangka: '#2ECC71',
+  balara: '#5DADE2',
+  rockwell: '#9B59B6',
+  navbar: '#5686C0',
+  text: '#333333',
+  grid: '#e0e0e0'
+};
 
+const GRID_LABELS = {
+  katipunan1: 'KATIPUNAN GRID (LOOP 1)',
+  katipunan2: 'KATIPUNAN GRID (LOOP 2)',
+  katipunan3: 'KATIPUNAN GRID (LOOP 3)',
+  barangka: 'BARANGKA GRID',
+  balara: 'BALARA GRID',
+  rockwell: 'ROCK WELL'
+};
 
 const MAP_WIDTH = 1800;
 const MAP_HEIGHT = 1100;
@@ -260,9 +279,30 @@ async function fetchMonthlyData(year) {
   }));
 }
 
+function setChartLoading(loading) {
+  let overlay = document.getElementById('barchart-loading-overlay');
+  const container = document.querySelector('.bar-chart-container');
+  if (!overlay && container) {
+    overlay = document.createElement('div');
+    overlay.id = 'barchart-loading-overlay';
+    overlay.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.75);backdrop-filter:blur(2px);border-radius:8px;z-index:10;';
+    overlay.innerHTML = '<div class="etrams-spinner" style="width:36px;height:36px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:etrams-spin 0.8s linear infinite;"></div><span style="margin-top:8px;font-size:13px;font-weight:600;color:#475569;">Loading monthly data...</span>';
+    container.style.position = 'relative';
+    container.appendChild(overlay);
+  }
+  if (overlay) {
+    overlay.style.display = loading ? 'flex' : 'none';
+  }
+}
+
 async function initBarChart() {
-  await fetchGridsForChart();
-  await fetchMonthlyData(currentYear);
+  setChartLoading(true);
+  try {
+    await fetchGridsForChart();
+    await fetchMonthlyData(currentYear);
+  } finally {
+    setChartLoading(false);
+  }
 
   const filterSelect = document.getElementById('btn-chart-filter');
   if (filterSelect) {
@@ -272,7 +312,12 @@ async function initBarChart() {
     });
   }
 
-  const ctx = document.getElementById('barChart').getContext('2d');
+  const canvas = document.getElementById('barChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (barChart) {
+    barChart.destroy();
+  }
   const datasets = activeGrids.map((grid) => ({
     label: grid.name,
     data: monthlyData.data[grid.id],
@@ -471,12 +516,21 @@ function setupButtons() {
   if (yearSelect) {
     yearSelect.addEventListener('change', async (e) => {
       currentYear = e.target.value;
-      await fetchMonthlyData(currentYear);
-      barChart.data.labels = monthlyData.months;
-      barChart.data.datasets.forEach((dataset) => {
-        dataset.data = monthlyData.data[dataset.id];
-      });
-      barChart.update();
+      setChartLoading(true);
+      try {
+        await fetchMonthlyData(currentYear);
+        if (barChart) {
+          barChart.data.labels = monthlyData.months;
+          barChart.data.datasets.forEach((dataset) => {
+            dataset.data = monthlyData.data[dataset.id];
+          });
+          barChart.update();
+        }
+      } catch (err) {
+        console.error('Error fetching monthly data on year change:', err);
+      } finally {
+        setChartLoading(false);
+      }
     });
   }
 
@@ -491,11 +545,11 @@ function setupButtons() {
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-  initRealtimeClock();
-  initMap();
-  initDonutChart();
-  initBarChart().catch(console.error);
-  setupButtons();
+  try { initRealtimeClock(); } catch (e) { console.error('initRealtimeClock error:', e); }
+  try { initMap(); } catch (e) { console.error('initMap error:', e); }
+  try { initDonutChart(); } catch (e) { console.error('initDonutChart error:', e); }
+  try { initBarChart().catch(console.error); } catch (e) { console.error('initBarChart error:', e); }
+  try { setupButtons(); } catch (e) { console.error('setupButtons error:', e); }
 });
 
 // Resize charts on window resize

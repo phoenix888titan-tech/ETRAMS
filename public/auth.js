@@ -40,11 +40,19 @@
   let activeFetches = 0;
   function updateGlobalLoader() {
     let loader = document.getElementById('etrams-global-loader');
-    if (!loader && document.body) {
-      loader = document.createElement('div');
-      loader.id = 'etrams-global-loader';
-      loader.innerHTML = '<div class="etrams-spinner"></div><div class="etrams-loader-text">Loading...</div>';
-      document.body.appendChild(loader);
+    if (!loader) {
+      const container = document.body || document.documentElement;
+      if (container) {
+        loader = document.createElement('div');
+        loader.id = 'etrams-global-loader';
+        loader.innerHTML = `
+          <div class="etrams-loader-card">
+            <div class="etrams-spinner"></div>
+            <div class="etrams-loader-text">Loading report data...</div>
+          </div>
+        `;
+        container.appendChild(loader);
+      }
     }
     if (loader) {
       loader.style.display = activeFetches > 0 ? 'flex' : 'none';
@@ -244,25 +252,37 @@
     #etrams-global-loader {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(255, 255, 255, 0.7);
-      z-index: 999999;
+      background: rgba(15, 23, 42, 0.4);
+      z-index: 9999999;
       display: none;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       backdrop-filter: blur(2px);
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .etrams-loader-card {
+      background: #ffffff;
+      padding: 20px 32px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      border: 1px solid #e2e8f0;
     }
     .etrams-spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid #e2e8f0;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e2e8f0;
       border-top-color: #3b82f6;
       border-radius: 50%;
-      animation: etrams-spin 1s linear infinite;
-      margin-bottom: 15px;
+      animation: etrams-spin 0.8s linear infinite;
     }
     .etrams-loader-text {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 600;
       color: #1e293b;
       font-family: 'Inter', sans-serif;

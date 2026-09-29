@@ -597,22 +597,22 @@ app.get('/api/building-demand', async (req, res) => {
     }
 
     let mainWhere = "WHERE 1=1";
-    const mainParams = [...mrParams];
+    const hierarchyParams = [];
     if (meter_type !== 'all') {
       mainWhere += " AND pm.meter_type = ?";
-      mainParams.push(meter_type);
+      hierarchyParams.push(meter_type);
     }
     if (grid_id) {
       mainWhere += ' AND g.grid_id = ?';
-      mainParams.push(grid_id);
+      hierarchyParams.push(grid_id);
     }
     if (building_id) {
       mainWhere += ' AND b.building_id = ?';
-      mainParams.push(building_id);
+      hierarchyParams.push(building_id);
     }
     if (area_id) {
       mainWhere += ' AND a.area_id = ?';
-      mainParams.push(area_id);
+      hierarchyParams.push(area_id);
     }
 
     const cte = `
@@ -649,7 +649,7 @@ app.get('/api/building-demand', async (req, res) => {
       ORDER BY first_read.read_date, b.building_id
     `;
 
-    const [rows] = await db.query(query, mainParams);
+    const [rows] = await db.query(query, [...mrParams, ...hierarchyParams, ...hierarchyParams]);
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
@@ -673,14 +673,14 @@ app.get('/api/grid-demand', async (req, res) => {
     }
 
     let mainWhere = "WHERE 1=1";
-    const mainParams = [...mrParams];
+    const hierarchyParams = [];
     if (meter_type !== 'all') {
       mainWhere += " AND pm.meter_type = ?";
-      mainParams.push(meter_type);
+      hierarchyParams.push(meter_type);
     }
     if (grid_id) {
       mainWhere += ' AND g.grid_id = ?';
-      mainParams.push(grid_id);
+      hierarchyParams.push(grid_id);
     }
 
     const cte = `
@@ -717,7 +717,7 @@ app.get('/api/grid-demand', async (req, res) => {
       ORDER BY g.grid_id
     `;
 
-    const [rows] = await db.query(query, mainParams);
+    const [rows] = await db.query(query, [...mrParams, ...hierarchyParams, ...hierarchyParams]);
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
@@ -790,7 +790,7 @@ app.get('/api/grid-loop-demand', async (req, res) => {
       ORDER BY g.grid_id, b.building_id
     `;
 
-    const [rows] = await db.query(query, [...mrParams, ...hierarchyParams]);
+    const [rows] = await db.query(query, [...mrParams, ...hierarchyParams, ...hierarchyParams]);
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
@@ -870,7 +870,7 @@ app.get('/api/building-area-demand', async (req, res) => {
       ORDER BY b.building_name, a.area_name
     `;
 
-    const [rows] = await db.query(query, [...mrParams, ...hierarchyParams]);
+    const [rows] = await db.query(query, [...mrParams, ...hierarchyParams, ...hierarchyParams]);
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
@@ -882,16 +882,17 @@ app.get('/api/monthly-grid-kw', async (req, res) => {
   try {
     const { year, grid_id, meter_type = 'all' } = req.query;
     const targetYear = year || new Date().getFullYear();
+    const dateParams = [`${targetYear}-01-01 00:00:00`, `${parseInt(targetYear) + 1}-01-01 00:00:00`];
     
     let mainWhere = "WHERE 1=1";
-    const mainParams = [`${targetYear}-01-01 00:00:00`, `${parseInt(targetYear) + 1}-01-01 00:00:00`];
+    const hierarchyParams = [];
     if (meter_type !== 'all') {
       mainWhere += " AND pm.meter_type = ?";
-      mainParams.push(meter_type);
+      hierarchyParams.push(meter_type);
     }
     if (grid_id) {
       mainWhere += ' AND g.grid_id = ?';
-      mainParams.push(grid_id);
+      hierarchyParams.push(grid_id);
     }
 
     const cte = `
@@ -928,7 +929,7 @@ app.get('/api/monthly-grid-kw', async (req, res) => {
       ORDER BY month_num
     `;
 
-    const [rows] = await db.query(query, mainParams);
+    const [rows] = await db.query(query, [...dateParams, ...hierarchyParams, ...hierarchyParams]);
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
