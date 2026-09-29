@@ -323,7 +323,6 @@ async function initBarChart() {
         },
         y: {
           min: 0,
-          max: 15,
           title: {
             display: true,
             text: 'kWh',

@@ -36,16 +36,39 @@
     window.location.href = '/login.html';
   };
 
+  
+  let activeFetches = 0;
+  function updateGlobalLoader() {
+    let loader = document.getElementById('etrams-global-loader');
+    if (!loader && document.body) {
+      loader = document.createElement('div');
+      loader.id = 'etrams-global-loader';
+      loader.innerHTML = '<div class="etrams-spinner"></div><div class="etrams-loader-text">Loading...</div>';
+      document.body.appendChild(loader);
+    }
+    if (loader) {
+      loader.style.display = activeFetches > 0 ? 'flex' : 'none';
+    }
+  }
+
   // Redirect to login when any API call answers 401 (expired/invalid session).
   const originalFetch = window.fetch.bind(window);
   window.fetch = async function (...args) {
-    const res = await originalFetch(...args);
-    if (res.status === 401 && !String(args[0]).includes('/api/auth/')) {
-      sessionStorage.removeItem('etrams_user');
-      window.location.href = '/login.html';
+    activeFetches++;
+    updateGlobalLoader();
+    try {
+      const res = await originalFetch(...args);
+      if (res.status === 401 && !String(args[0]).includes('/api/auth/')) {
+        sessionStorage.removeItem('etrams_user');
+        window.location.href = '/login.html';
+      }
+      return res;
+    } finally {
+      activeFetches--;
+      updateGlobalLoader();
     }
-    return res;
   };
+
 
   // IndexedDB Storage Helper for eTRAMS (solves QuotaExceededError for high-res map images & theme settings)
   const DB_NAME = 'etrams_db';
@@ -216,6 +239,37 @@
       transition: background 0.15s ease;
     }
     .etrams-logout-btn:hover { background: #1E40AF; }
+  `;
+  style.textContent += `
+    #etrams-global-loader {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 255, 255, 0.7);
+      z-index: 999999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(2px);
+    }
+    .etrams-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #e2e8f0;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: etrams-spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+    .etrams-loader-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      font-family: 'Inter', sans-serif;
+    }
+    @keyframes etrams-spin {
+      to { transform: rotate(360deg); }
+    }
   `;
   document.head.appendChild(style);
 
