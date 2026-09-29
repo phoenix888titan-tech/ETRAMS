@@ -910,7 +910,7 @@ app.get('/api/meter-readings', async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameter: meter_id' });
     }
 
-    let where = "WHERE mr.meter_id = ? AND mr.reading_datetime IS NOT NULL AND pm.meter_type = 'all'";
+    let where = "WHERE mr.meter_id = ? AND mr.reading_datetime IS NOT NULL";
     const params = [meter_id];
 
     if (start_date) {
@@ -956,7 +956,7 @@ app.get('/api/meter-averages', async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameter: meter_id' });
     }
 
-    let where = "WHERE mr.meter_id = ? AND mr.reading_datetime IS NOT NULL AND pm.meter_type = 'all'";
+    let where = "WHERE mr.meter_id = ? AND mr.reading_datetime IS NOT NULL";
     const params = [meter_id];
 
     if (start_date) {
