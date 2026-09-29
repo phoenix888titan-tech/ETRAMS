@@ -48,6 +48,11 @@ const els = {
   pageTitle: document.getElementById('page-section-title')
 };
 
+function fmt5(num) {
+  if (num === null || num === undefined) return '-';
+  return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+}
+
 function fmt(num) {
   if (num === null || num === undefined) return '-';
   return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
@@ -201,9 +206,9 @@ function renderTable(rows) {
       </td>
       <td>${escapeHtml(row.building_name)}</td>
       <td>${escapeHtml(row.area_name)}</td>
-      <td class="numeric">${fmt(row.current_reading)}</td>
-      <td class="numeric">${fmt(row.previous_reading)}</td>
-      <td class="numeric">${fmt(parseFloat(row.current_reading || 0) - parseFloat(row.previous_reading || 0))}</td>
+      <td class="numeric">${fmt5(row.current_reading)}</td>
+      <td class="numeric">${fmt5(row.previous_reading)}</td>
+      <td class="numeric">${fmt5(parseFloat(row.current_reading || 0) - parseFloat(row.previous_reading || 0))}</td>
 
     </tr>
   `).join('');
