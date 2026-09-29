@@ -1,26 +1,7 @@
 /* ADMU Energy Management System Dashboard Scripts */
 
 // --- Constants & Grid Metadata ---
-const COLORS = {
-  katipunan1: '#E67E22',
-  katipunan2: '#E74C3C',
-  katipunan3: '#F1C40F',
-  barangka: '#2ECC71',
-  balara: '#5DADE2',
-  rockwell: '#9B59B6',
-  navbar: '#5686C0',
-  text: '#333333',
-  grid: '#e0e0e0'
-};
 
-const GRID_LABELS = {
-  katipunan1: 'KATIPUNAN GRID (LOOP 1)',
-  katipunan2: 'KATIPUNAN GRID (LOOP 2)',
-  katipunan3: 'KATIPUNAN GRID (LOOP 3)',
-  barangka: 'BARANGKA GRID',
-  balara: 'BALARA GRID',
-  rockwell: 'ROCK WELL'
-};
 
 const MAP_WIDTH = 1800;
 const MAP_HEIGHT = 1100;
@@ -246,28 +227,60 @@ function initDonutChart() {
   });
 }
 
-function generateMonthlyData(selectedYear = '2026') {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const data = {};
-  const seedMultiplier = selectedYear === '2025' ? 0.8 : selectedYear === '2027' ? 1.2 : 1.0;
-  Object.keys(GRID_LABELS).forEach((key) => {
-    data[key] = months.map(() => Math.floor((Math.random() * 8 + 2) * seedMultiplier));
-  });
-  return { months, data };
+
+
+let currentYear = new Date().getFullYear().toString();
+let activeGrids = [];
+let monthlyData = {
+  months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  data: {}
+};
+
+async function fetchGridsForChart() {
+  const res = await fetch('/api/grids');
+  if (res.ok) {
+    activeGrids = await res.json();
+  }
 }
 
-let currentYear = '2026';
-let monthlyData = generateMonthlyData(currentYear);
+async function fetchMonthlyData(year) {
+  monthlyData.data = {};
+  await Promise.all(activeGrids.map(async (grid) => {
+    const res = await fetch(`/api/monthly-grid-kw?year=${year}&grid_id=${grid.id}`);
+    if (res.ok) {
+      const rows = await res.json();
+      const dataArr = new Array(12).fill(0);
+      rows.forEach(r => {
+        dataArr[r.month_num - 1] = parseFloat(r.total_kw);
+      });
+      monthlyData.data[grid.id] = dataArr;
+    } else {
+      monthlyData.data[grid.id] = new Array(12).fill(0);
+    }
+  }));
+}
 
-function initBarChart() {
+async function initBarChart() {
+  await fetchGridsForChart();
+  await fetchMonthlyData(currentYear);
+
+  const filterSelect = document.getElementById('btn-chart-filter');
+  if (filterSelect) {
+    filterSelect.innerHTML = '<option value="all">All Grids</option>';
+    activeGrids.forEach(g => {
+      filterSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+    });
+  }
+
   const ctx = document.getElementById('barChart').getContext('2d');
-  const datasets = Object.keys(GRID_LABELS).map((key) => ({
-    label: GRID_LABELS[key],
-    data: monthlyData.data[key],
-    backgroundColor: COLORS[key],
+  const datasets = activeGrids.map((grid) => ({
+    label: grid.name,
+    data: monthlyData.data[grid.id],
+    backgroundColor: grid.color || '#3B82F6',
     borderRadius: 3,
     barPercentage: 0.7,
-    categoryPercentage: 0.8
+    categoryPercentage: 0.8,
+    id: grid.id
   }));
 
   barChart = new Chart(ctx, {
@@ -345,21 +358,20 @@ function updateBarChartRange(range) {
   const start = 12 - sliceCount;
   const labels = monthlyData.months.slice(start);
   barChart.data.labels = labels;
-  barChart.data.datasets.forEach((dataset, index) => {
-    const key = Object.keys(GRID_LABELS)[index];
-    dataset.data = monthlyData.data[key].slice(start);
+  barChart.data.datasets.forEach((dataset) => {
+    dataset.data = monthlyData.data[dataset.id].slice(start);
   });
   barChart.update();
 }
 
-function filterBarChart(gridKey) {
-  if (gridKey === 'all') {
+function filterBarChart(gridId) {
+  if (gridId === 'all') {
     barChart.data.datasets.forEach((ds) => {
       ds.hidden = false;
     });
   } else {
     barChart.data.datasets.forEach((ds) => {
-      ds.hidden = ds.label !== GRID_LABELS[gridKey];
+      ds.hidden = String(ds.id) !== String(gridId);
     });
   }
   barChart.update();
@@ -458,13 +470,12 @@ function setupButtons() {
 
   const yearSelect = document.getElementById('select-chart-year');
   if (yearSelect) {
-    yearSelect.addEventListener('change', (e) => {
+    yearSelect.addEventListener('change', async (e) => {
       currentYear = e.target.value;
-      monthlyData = generateMonthlyData(currentYear);
+      await fetchMonthlyData(currentYear);
       barChart.data.labels = monthlyData.months;
-      barChart.data.datasets.forEach((dataset, index) => {
-        const key = Object.keys(GRID_LABELS)[index];
-        dataset.data = monthlyData.data[key];
+      barChart.data.datasets.forEach((dataset) => {
+        dataset.data = monthlyData.data[dataset.id];
       });
       barChart.update();
     });
@@ -484,7 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initRealtimeClock();
   initMap();
   initDonutChart();
-  initBarChart();
+  initBarChart().catch(console.error);
   setupButtons();
 });
 

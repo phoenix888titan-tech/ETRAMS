@@ -588,23 +588,6 @@ app.get('/api/building-demand', async (req, res) => {
       mrParams.push(end_date);
     }
 
-    const cte = `
-      WITH RankedReadings AS (
-        SELECT 
-          mr.meter_id,
-          DATE(mr.reading_datetime) as read_date,
-          mr.current_reading,
-          ROW_NUMBER() OVER (PARTITION BY mr.meter_id, DATE(mr.reading_datetime) ORDER BY mr.reading_datetime ASC) as rn_asc,
-          ROW_NUMBER() OVER (PARTITION BY mr.meter_id, DATE(mr.reading_datetime) ORDER BY mr.reading_datetime DESC) as rn_desc
-        FROM meter_readings mr
-        JOIN power_meters pm ON mr.meter_id = pm.meter_id
-        JOIN areas a ON pm.area_id = a.area_id
-        JOIN buildings b ON a.building_id = b.building_id
-        JOIN grids g ON b.grid_id = g.grid_id
-        ${mrWhere} ${mainWhere.replace('WHERE 1=1', '')}
-      )
-    `;
-
     let mainWhere = "WHERE 1=1";
     const mainParams = [...mrParams];
     if (meter_type !== 'all') {
@@ -624,6 +607,22 @@ app.get('/api/building-demand', async (req, res) => {
       mainParams.push(area_id);
     }
 
+    const cte = `
+      WITH RankedReadings AS (
+        SELECT 
+          mr.meter_id,
+          DATE(mr.reading_datetime) as read_date,
+          mr.current_reading,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id, DATE(mr.reading_datetime) ORDER BY mr.reading_datetime ASC) as rn_asc,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id, DATE(mr.reading_datetime) ORDER BY mr.reading_datetime DESC) as rn_desc
+        FROM meter_readings mr
+        JOIN power_meters pm ON mr.meter_id = pm.meter_id
+        JOIN areas a ON pm.area_id = a.area_id
+        JOIN buildings b ON a.building_id = b.building_id
+        JOIN grids g ON b.grid_id = g.grid_id
+        ${mrWhere} ${mainWhere.replace('WHERE 1=1', '')}
+      )
+    `;
     const query = `
       ${cte}
       SELECT
@@ -665,6 +664,17 @@ app.get('/api/grid-demand', async (req, res) => {
       mrParams.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
     }
 
+    let mainWhere = "WHERE 1=1";
+    const mainParams = [...mrParams];
+    if (meter_type !== 'all') {
+      mainWhere += " AND pm.meter_type = ?";
+      mainParams.push(meter_type);
+    }
+    if (grid_id) {
+      mainWhere += ' AND g.grid_id = ?';
+      mainParams.push(grid_id);
+    }
+
     const cte = `
       WITH RankedReadings AS (
         SELECT 
@@ -681,18 +691,6 @@ app.get('/api/grid-demand', async (req, res) => {
         ${mrWhere} ${mainWhere.replace('WHERE 1=1', '')}
       )
     `;
-
-    let mainWhere = "WHERE 1=1";
-    const mainParams = [...mrParams];
-    if (meter_type !== 'all') {
-      mainWhere += " AND pm.meter_type = ?";
-      mainParams.push(meter_type);
-    }
-    if (grid_id) {
-      mainWhere += ' AND g.grid_id = ?';
-      mainParams.push(grid_id);
-    }
-
     const query = `
       ${cte}
       SELECT
@@ -877,6 +875,17 @@ app.get('/api/monthly-grid-kw', async (req, res) => {
     const { year, grid_id, meter_type = 'all' } = req.query;
     const targetYear = year || new Date().getFullYear();
     
+    let mainWhere = "WHERE 1=1";
+    const mainParams = [targetYear];
+    if (meter_type !== 'all') {
+      mainWhere += " AND pm.meter_type = ?";
+      mainParams.push(meter_type);
+    }
+    if (grid_id) {
+      mainWhere += ' AND g.grid_id = ?';
+      mainParams.push(grid_id);
+    }
+
     const cte = `
       WITH RankedReadings AS (
         SELECT 
@@ -894,18 +903,6 @@ app.get('/api/monthly-grid-kw', async (req, res) => {
         WHERE YEAR(mr.reading_datetime) = ? ${mainWhere.replace('WHERE 1=1', '')}
       )
     `;
-
-    let mainWhere = "WHERE 1=1";
-    const mainParams = [targetYear];
-    if (meter_type !== 'all') {
-      mainWhere += " AND pm.meter_type = ?";
-      mainParams.push(meter_type);
-    }
-    if (grid_id) {
-      mainWhere += ' AND g.grid_id = ?';
-      mainParams.push(grid_id);
-    }
-
     const query = `
       ${cte}
       SELECT
