@@ -161,8 +161,8 @@ app.get('/api/filters', async (req, res) => {
 
 function isSpecificMeterType(val) {
   if (!val) return false;
-  const s = String(val).trim().toLowerCase();
-  return s !== 'all' && s !== '--all--' && s !== '';
+  const s = String(val).trim().toLowerCase().replace(/[-_\s]/g, '');
+  return s !== 'all' && s !== '' && s !== 'undefined' && s !== 'null';
 }
 
 // Get summary counts
@@ -297,7 +297,6 @@ app.get('/api/meters', async (req, res) => {
     `;
 
     const countQuery = `
-      ${cte}
       SELECT COUNT(*) AS total
       FROM power_meters pm
       JOIN areas a ON pm.area_id = a.area_id
@@ -306,38 +305,7 @@ app.get('/api/meters', async (req, res) => {
       ${hierarchyWhere}
     `;
 
-    const dataQuery = `
-      ${cte}
-      SELECT
-        pm.meter_id,
-        pm.meter_code,
-        pm.meter_description,
-        g.grid_name,
-        b.building_name,
-        a.area_name,
-        COALESCE(last_read.current_reading, 0) AS current_reading,
-        COALESCE(first_read.current_reading, 0) AS previous_reading,
-        (COALESCE(last_read.current_reading, 0) - COALESCE(first_read.current_reading, 0)) AS total_used,
-        COALESCE(last_read.active_power, 0) AS active_power,
-        COALESCE(last_read.amps, 0) AS amps,
-        COALESCE(last_read.freq, 0) AS freq,
-        COALESCE(last_read.power_factor, 0) AS power_factor,
-        COALESCE(last_read.vll, 0) AS vll,
-        COALESCE(last_read.vln, 0) AS vln,
-        pm.status,
-        last_read.reading_datetime
-      FROM power_meters pm
-      JOIN areas a ON pm.area_id = a.area_id
-      JOIN buildings b ON a.building_id = b.building_id
-      JOIN grids g ON b.grid_id = g.grid_id
-      LEFT JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
-      LEFT JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1
-      ${hierarchyWhere}
-      ORDER BY ${sortColumn} ${sortOrder}
-      LIMIT ? OFFSET ?
-    `;
-
-    const [countRows] = await db.query(countQuery, [...params, ...hierarchyParams, ...hierarchyParams]);
+    const [countRows] = await db.query(countQuery, hierarchyParams);
     const total = countRows[0].total;
 
     const [dataRows] = await db.query(dataQuery, [...params, ...hierarchyParams, ...hierarchyParams, pageLimit, offset]);

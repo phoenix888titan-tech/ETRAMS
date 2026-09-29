@@ -120,6 +120,9 @@ async function loadBuildingReport() {
     }
 
     const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
     const result = await res.json();
     const meters = result.data || [];
 
@@ -203,13 +206,14 @@ function setupEvents() {
   document.getElementById('btn-reset-filters').addEventListener('click', async () => {
     state.startDate = getCurrentDateTimeLocal(false);
     state.endDate = getCurrentDateTimeLocal(true);
+    state.meterType = 'all';
     if (els.gridSelect.options.length > 0) {
       state.gridId = 'all';
       els.gridSelect.value = state.gridId;
       await loadBuildings(state.gridId);
     }
     els.startTimeInput.value = state.startDate;
-  if(els.meterTypeSelect) els.meterTypeSelect.value = state.meterType;
+    if (els.meterTypeSelect) els.meterTypeSelect.value = 'all';
     els.endTimeInput.value = state.endDate;
     loadBuildingReport();
   });
@@ -223,6 +227,9 @@ function setupEvents() {
     }
     if (state.buildingId && state.buildingId !== 'all') {
       url += `&building_id=${state.buildingId}`;
+    }
+    if (state.meterType && state.meterType !== 'all') {
+      url += `&meter_type=${encodeURIComponent(state.meterType)}`;
     }
     window.open(url, '_blank');
   });

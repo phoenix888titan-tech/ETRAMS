@@ -76,6 +76,9 @@ async function loadGridReport() {
       url += `&meter_type=${encodeURIComponent(state.meterType)}`;
     }
     const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
     const result = await res.json();
     const meters = result.data || result;
 
@@ -141,9 +144,10 @@ function setupEvents() {
     state.startDate = getCurrentDateTimeLocal(false);
     state.endDate = getCurrentDateTimeLocal(true);
     state.gridId = 'all';
+    state.meterType = 'all';
     els.gridSelect.value = state.gridId;
     els.startTimeInput.value = state.startDate;
-  if(els.meterTypeSelect) els.meterTypeSelect.value = state.meterType;
+    if (els.meterTypeSelect) els.meterTypeSelect.value = 'all';
     els.endTimeInput.value = state.endDate;
     loadGridReport();
   });
@@ -154,6 +158,9 @@ function setupEvents() {
     let url = `${API_BASE}/api/meters/csv?start_date=${startDay}&end_date=${endDay}`;
     if (state.gridId !== 'all') {
       url += `&grid_id=${state.gridId}`;
+    }
+    if (state.meterType && state.meterType !== 'all') {
+      url += `&meter_type=${encodeURIComponent(state.meterType)}`;
     }
     window.open(url, '_blank');
   });
