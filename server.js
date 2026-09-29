@@ -161,8 +161,9 @@ app.get('/api/filters', async (req, res) => {
 
 function isSpecificMeterType(val) {
   if (!val) return false;
-  const s = String(val).trim().toLowerCase().replace(/[-_\s]/g, '');
-  return s !== 'all' && s !== '' && s !== 'undefined' && s !== 'null';
+  const s = String(val).trim().toLowerCase();
+  // Only filter if a real specific type was sent (main / submeter / backup)
+  return s === 'main' || s === 'submeter' || s === 'backup';
 }
 
 // Get summary counts

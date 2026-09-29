@@ -115,7 +115,7 @@ async function loadBuildingReport() {
     if (state.endDate) {
       url += `&end_date=${encodeURIComponent(state.endDate)}`;
     }
-    if (state.meterType) {
+    if (state.meterType && state.meterType !== 'all') {
       url += `&meter_type=${encodeURIComponent(state.meterType)}`;
     }
 

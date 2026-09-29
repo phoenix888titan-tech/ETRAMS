@@ -593,7 +593,8 @@ function App() {
   useEffect(() => {
     if (!filters.gridId || !filters.buildingId) return;
     setLoading(true);
-    let url = `${API_BASE}/api/building-area-demand?grid_id=${filters.gridId}&building_id=${filters.buildingId}&start_date=${filters.startDate}&end_date=${filters.endDate}&meter_type=${filters.meterType}`;
+    let url = `${API_BASE}/api/building-area-demand?grid_id=${filters.gridId}&building_id=${filters.buildingId}&start_date=${filters.startDate}&end_date=${filters.endDate}`;
+    if (filters.meterType && filters.meterType !== 'all') url += `&meter_type=${filters.meterType}`;
     if (filters.areaId) url += `&area_id=${filters.areaId}`;
     fetchJSON(url).then((data) => {
       setBuildingAreaData(data);
@@ -607,7 +608,8 @@ function App() {
   useEffect(() => {
     if (!filters.gridId || !filters.buildingId) return;
     setMetersLoading(true);
-    let url = `${API_BASE}/api/meters?grid_id=${filters.gridId}&building_id=${filters.buildingId}&limit=1000&start_date=${filters.startDate}&end_date=${filters.endDate}&meter_type=${filters.meterType}`;
+    let url = `${API_BASE}/api/meters?grid_id=${filters.gridId}&building_id=${filters.buildingId}&limit=1000&start_date=${filters.startDate}&end_date=${filters.endDate}`;
+    if (filters.meterType && filters.meterType !== 'all') url += `&meter_type=${filters.meterType}`;
     if (filters.areaId) url += `&area_id=${filters.areaId}`;
 
     fetchJSON(url)

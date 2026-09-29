@@ -161,7 +161,7 @@ async function loadMeters() {
     if (state.filters.areaId) params.set('area_id', state.filters.areaId);
     if (state.filters.startDate) params.set('start_date', state.filters.startDate);
     if (state.filters.endDate) params.set('end_date', state.filters.endDate);
-    if (state.filters.meterType) params.set('meter_type', state.filters.meterType);
+    if (state.filters.meterType && state.filters.meterType !== 'all') params.set('meter_type', state.filters.meterType);
 
     params.set('page', state.pagination.page);
     params.set('limit', state.pagination.limit);

@@ -638,7 +638,8 @@ function App() {
       setMeters([]);
       return;
     }
-    let url = `${API_BASE}/api/meters?building_id=${filters.buildingId}&limit=500&meter_type=${filters.meterType}`;
+    let url = `${API_BASE}/api/meters?building_id=${filters.buildingId}&limit=500`;
+    if (filters.meterType && filters.meterType !== 'all') url += `&meter_type=${filters.meterType}`;
     if (filters.areaId) url += `&area_id=${filters.areaId}`;
     fetchJSON(url)
       .then((res) => {

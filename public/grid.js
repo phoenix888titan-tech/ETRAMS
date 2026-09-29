@@ -573,7 +573,8 @@ function App() {
   useEffect(() => {
     if (!filters.gridId) return;
     setLoading(true);
-    let url = `${API_BASE}/api/grid-loop-demand?start_date=${filters.startDate}&end_date=${filters.endDate}&meter_type=${filters.meterType}`;
+    let url = `${API_BASE}/api/grid-loop-demand?start_date=${filters.startDate}&end_date=${filters.endDate}`;
+    if (filters.meterType && filters.meterType !== 'all') url += `&meter_type=${filters.meterType}`;
     if (filters.gridId && filters.gridId !== "all") url += `&grid_id=${filters.gridId}`;
     fetchJSON(url).then((data) => {
       setGridDemand(data);

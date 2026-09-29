@@ -72,7 +72,7 @@ async function loadGridReport() {
     if (state.gridId !== 'all') {
       url += `&grid_id=${state.gridId}`;
     }
-    if (state.meterType) {
+    if (state.meterType && state.meterType !== 'all') {
       url += `&meter_type=${encodeURIComponent(state.meterType)}`;
     }
     const res = await fetch(url);
