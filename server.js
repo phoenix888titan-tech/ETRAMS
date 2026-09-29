@@ -192,22 +192,6 @@ app.get('/api/summary', async (req, res) => {
       where += ' AND pm.status = ?';
       params.push(status);
     }
-    if (start_date) {
-      where += ' AND pm.reading_datetime >= ?';
-      params.push(start_date.includes(' ') || start_date.includes('T') ? start_date.replace('T', ' ') : `${start_date} 00:00:00`);
-    }
-    if (end_date) {
-      where += ' AND pm.reading_datetime <= ?';
-      params.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
-    }
-    if (month) {
-      where += ' AND MONTH(pm.reading_datetime) = ?';
-      params.push(month);
-    }
-    if (year) {
-      where += ' AND YEAR(pm.reading_datetime) = ?';
-      params.push(year);
-    }
 
     const [rows] = await db.query(`
       SELECT
@@ -353,10 +337,10 @@ app.get('/api/meters', async (req, res) => {
       LIMIT ? OFFSET ?
     `;
 
-    const [countRows] = await db.query(countQuery, [...params, ...hierarchyParams]);
+    const [countRows] = await db.query(countQuery, [...params, ...hierarchyParams, ...hierarchyParams]);
     const total = countRows[0].total;
 
-    const [dataRows] = await db.query(dataQuery, [...params, ...hierarchyParams, pageLimit, offset]);
+    const [dataRows] = await db.query(dataQuery, [...params, ...hierarchyParams, ...hierarchyParams, pageLimit, offset]);
 
     res.json({
       data: dataRows,
@@ -476,7 +460,7 @@ app.get('/api/meters/csv', async (req, res) => {
       ORDER BY pm.meter_id ASC
     `;
 
-    const [rows] = await db.query(csvQuery, [...params, ...hierarchyParams]);
+    const [rows] = await db.query(csvQuery, [...params, ...hierarchyParams, ...hierarchyParams]);
 
     if (!rows.length) {
       return res.status(404).send('No data found for the selected filters.');
