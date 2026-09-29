@@ -159,15 +159,21 @@ app.get('/api/filters', async (req, res) => {
   }
 });
 
+function isSpecificMeterType(val) {
+  if (!val) return false;
+  const s = String(val).trim().toLowerCase();
+  return s !== 'all' && s !== '--all--' && s !== '';
+}
+
 // Get summary counts
 app.get('/api/summary', async (req, res) => {
   try {
     const { grid_id, building_id, area_id, status, month, year, start_date, end_date, meter_type = 'all' } = req.query;
     let where = "WHERE 1=1";
     const params = [];
-    if (meter_type !== 'all') {
+    if (isSpecificMeterType(meter_type)) {
       where += " AND pm.meter_type = ?";
-      params.push(meter_type);
+      params.push(meter_type.toLowerCase());
     }
 
     if (grid_id) {
@@ -256,9 +262,9 @@ app.get('/api/meters', async (req, res) => {
 
     let hierarchyWhere = "WHERE 1=1";
     const hierarchyParams = [];
-    if (meter_type !== 'all') {
+    if (isSpecificMeterType(meter_type)) {
       hierarchyWhere += " AND pm.meter_type = ?";
-      hierarchyParams.push(meter_type);
+      hierarchyParams.push(meter_type.toLowerCase());
     }
 
     if (grid_id) {
@@ -397,9 +403,9 @@ app.get('/api/meters/csv', async (req, res) => {
 
     let hierarchyWhere = "WHERE 1=1";
     const hierarchyParams = [];
-    if (meter_type !== 'all') {
+    if (isSpecificMeterType(meter_type)) {
       hierarchyWhere += " AND pm.meter_type = ?";
-      hierarchyParams.push(meter_type);
+      hierarchyParams.push(meter_type.toLowerCase());
     }
 
     if (grid_id) {
@@ -598,9 +604,9 @@ app.get('/api/building-demand', async (req, res) => {
 
     let mainWhere = "WHERE 1=1";
     const hierarchyParams = [];
-    if (meter_type !== 'all') {
+    if (isSpecificMeterType(meter_type)) {
       mainWhere += " AND pm.meter_type = ?";
-      hierarchyParams.push(meter_type);
+      hierarchyParams.push(meter_type.toLowerCase());
     }
     if (grid_id) {
       mainWhere += ' AND g.grid_id = ?';
@@ -674,9 +680,9 @@ app.get('/api/grid-demand', async (req, res) => {
 
     let mainWhere = "WHERE 1=1";
     const hierarchyParams = [];
-    if (meter_type !== 'all') {
+    if (isSpecificMeterType(meter_type)) {
       mainWhere += " AND pm.meter_type = ?";
-      hierarchyParams.push(meter_type);
+      hierarchyParams.push(meter_type.toLowerCase());
     }
     if (grid_id) {
       mainWhere += ' AND g.grid_id = ?';
@@ -742,9 +748,9 @@ app.get('/api/grid-loop-demand', async (req, res) => {
 
     let hierarchyWhere = "WHERE 1=1";
     const hierarchyParams = [];
-    if (meter_type !== 'all') {
+    if (isSpecificMeterType(meter_type)) {
       hierarchyWhere += " AND pm.meter_type = ?";
-      hierarchyParams.push(meter_type);
+      hierarchyParams.push(meter_type.toLowerCase());
     }
 
     if (grid_id) {
@@ -815,9 +821,9 @@ app.get('/api/building-area-demand', async (req, res) => {
 
     let hierarchyWhere = "WHERE 1=1";
     const hierarchyParams = [];
-    if (meter_type !== 'all') {
+    if (isSpecificMeterType(meter_type)) {
       hierarchyWhere += " AND pm.meter_type = ?";
-      hierarchyParams.push(meter_type);
+      hierarchyParams.push(meter_type.toLowerCase());
     }
 
     if (grid_id) {
@@ -886,9 +892,9 @@ app.get('/api/monthly-grid-kw', async (req, res) => {
     
     let mainWhere = "WHERE 1=1";
     const hierarchyParams = [];
-    if (meter_type !== 'all') {
+    if (isSpecificMeterType(meter_type)) {
       mainWhere += " AND pm.meter_type = ?";
-      hierarchyParams.push(meter_type);
+      hierarchyParams.push(meter_type.toLowerCase());
     }
     if (grid_id) {
       mainWhere += ' AND g.grid_id = ?';

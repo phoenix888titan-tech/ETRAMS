@@ -22,6 +22,7 @@ const state = {
 const els = {
   gridSelect: document.getElementById('filter-grid'),
   buildingSelect: document.getElementById('filter-building'),
+  meterTypeSelect: document.getElementById('filter-meter-type'),
   startTimeInput: document.getElementById('filter-start-time'),
   endTimeInput: document.getElementById('filter-end-time'),
   outGrid: document.getElementById('out-selected-grid'),
@@ -113,6 +114,9 @@ async function loadBuildingReport() {
     }
     if (state.endDate) {
       url += `&end_date=${encodeURIComponent(state.endDate)}`;
+    }
+    if (state.meterType) {
+      url += `&meter_type=${encodeURIComponent(state.meterType)}`;
     }
 
     const res = await fetch(url);
