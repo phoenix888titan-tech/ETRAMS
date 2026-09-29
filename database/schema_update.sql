@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS meter_readings (
   reading_id BIGINT PRIMARY KEY AUTO_INCREMENT,
   meter_id INT NOT NULL,
-  reading_value DECIMAL(15,3) NOT NULL,
+  reading_value DECIMAL(15,5) NOT NULL,
   active_power DECIMAL(10,3) DEFAULT NULL,
   amps DECIMAL(10,3) DEFAULT NULL,
   freq DECIMAL(10,3) DEFAULT NULL,
