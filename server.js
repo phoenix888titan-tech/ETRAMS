@@ -294,7 +294,11 @@ app.get('/api/meters', async (req, res) => {
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
         FROM meter_readings mr
-        ${where}
+        JOIN power_meters pm ON mr.meter_id = pm.meter_id
+        JOIN areas a ON pm.area_id = a.area_id
+        JOIN buildings b ON a.building_id = b.building_id
+        JOIN grids g ON b.grid_id = g.grid_id
+        ${where} ${hierarchyWhere.replace('WHERE 1=1', '')}
       )
     `;
 
@@ -422,7 +426,11 @@ app.get('/api/meters/csv', async (req, res) => {
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
         FROM meter_readings mr
-        ${where}
+        JOIN power_meters pm ON mr.meter_id = pm.meter_id
+        JOIN areas a ON pm.area_id = a.area_id
+        JOIN buildings b ON a.building_id = b.building_id
+        JOIN grids g ON b.grid_id = g.grid_id
+        ${where} ${hierarchyWhere.replace('WHERE 1=1', '')}
       )
     `;
 
@@ -589,7 +597,11 @@ app.get('/api/building-demand', async (req, res) => {
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id, DATE(mr.reading_datetime) ORDER BY mr.reading_datetime ASC) as rn_asc,
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id, DATE(mr.reading_datetime) ORDER BY mr.reading_datetime DESC) as rn_desc
         FROM meter_readings mr
-        ${mrWhere}
+        JOIN power_meters pm ON mr.meter_id = pm.meter_id
+        JOIN areas a ON pm.area_id = a.area_id
+        JOIN buildings b ON a.building_id = b.building_id
+        JOIN grids g ON b.grid_id = g.grid_id
+        ${mrWhere} ${mainWhere.replace('WHERE 1=1', '')}
       )
     `;
 
@@ -662,7 +674,11 @@ app.get('/api/grid-demand', async (req, res) => {
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
         FROM meter_readings mr
-        ${mrWhere}
+        JOIN power_meters pm ON mr.meter_id = pm.meter_id
+        JOIN areas a ON pm.area_id = a.area_id
+        JOIN buildings b ON a.building_id = b.building_id
+        JOIN grids g ON b.grid_id = g.grid_id
+        ${mrWhere} ${mainWhere.replace('WHERE 1=1', '')}
       )
     `;
 
@@ -739,7 +755,11 @@ app.get('/api/grid-loop-demand', async (req, res) => {
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
         FROM meter_readings mr
-        ${mrWhere}
+        JOIN power_meters pm ON mr.meter_id = pm.meter_id
+        JOIN areas a ON pm.area_id = a.area_id
+        JOIN buildings b ON a.building_id = b.building_id
+        JOIN grids g ON b.grid_id = g.grid_id
+        ${mrWhere} ${hierarchyWhere.replace('WHERE 1=1', '')}
       )
     `;
 
@@ -816,7 +836,11 @@ app.get('/api/building-area-demand', async (req, res) => {
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
         FROM meter_readings mr
-        ${mrWhere}
+        JOIN power_meters pm ON mr.meter_id = pm.meter_id
+        JOIN areas a ON pm.area_id = a.area_id
+        JOIN buildings b ON a.building_id = b.building_id
+        JOIN grids g ON b.grid_id = g.grid_id
+        ${mrWhere} ${hierarchyWhere.replace('WHERE 1=1', '')}
       )
     `;
 
@@ -863,7 +887,11 @@ app.get('/api/monthly-grid-kw', async (req, res) => {
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id, MONTH(mr.reading_datetime) ORDER BY mr.reading_datetime ASC) as rn_asc,
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id, MONTH(mr.reading_datetime) ORDER BY mr.reading_datetime DESC) as rn_desc
         FROM meter_readings mr
-        WHERE YEAR(mr.reading_datetime) = ?
+        JOIN power_meters pm ON mr.meter_id = pm.meter_id
+        JOIN areas a ON pm.area_id = a.area_id
+        JOIN buildings b ON a.building_id = b.building_id
+        JOIN grids g ON b.grid_id = g.grid_id
+        WHERE YEAR(mr.reading_datetime) = ? ${mainWhere.replace('WHERE 1=1', '')}
       )
     `;
 
