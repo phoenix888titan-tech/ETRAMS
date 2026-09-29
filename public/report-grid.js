@@ -15,7 +15,7 @@ const state = {
   gridId: '',
   startDate: getCurrentDateTimeLocal(false),
   endDate: getCurrentDateTimeLocal(true),
-  meterType: 'main'
+  meterType: 'all'
 };
 
 const els = {

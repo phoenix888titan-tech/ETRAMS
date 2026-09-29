@@ -16,7 +16,7 @@ const state = {
     areaId: '',
     startDate: defaultStart,
     endDate: defaultEnd,
-    meterType: 'main'
+    meterType: 'all'
   },
   pagination: {
     page: 1,
@@ -447,7 +447,7 @@ function setupActionButtons() {
       areaId: '',
       startDate: defaultStart,
       endDate: defaultEnd,
-      meterType: 'main'
+      meterType: 'all'
     };
     els.gridSelect.value = state.filters.gridId;
     els.startTimeInput.value = state.filters.startDate;

@@ -245,6 +245,7 @@ function FilterControlBar({ filters, setFilters, grids }) {
                 <div class="filter-group">
           <label for="filter-meter-type">Meter Type</label>
           <select id="filter-meter-type" value=${filters.meterType} onChange=${(e) => setFilters((prev) => ({ ...prev, meterType: e.target.value }))}>
+            <option value="all">-- ALL --</option>
             <option value="main">Main</option>
             <option value="submeter">Submeter</option>
             <option value="backup">Backup</option>
@@ -547,7 +548,7 @@ function App() {
     gridId: '',
     startDate: defaultDateString,
     endDate: defaultDateString,
-    meterType: 'main'
+    meterType: 'all'
   });
 
   const [buildings, setBuildings] = useState([]);
