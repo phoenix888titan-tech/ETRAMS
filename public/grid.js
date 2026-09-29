@@ -355,7 +355,8 @@ function GridLineChart({ gridData, loading }) {
         </div>
       </div>
       <div class="chart-wrapper">
-        ${loading ? html`<div class="empty-state">Loading chart data...</div>` : html`<canvas ref=${canvasRef} />`}
+        ${loading ? html`<div class="chart-loading-overlay"><div class="spin"></div>Loading chart data...</div>` : null}
+        <canvas ref=${canvasRef} />
       </div>
     </section>
   `;
@@ -430,8 +431,9 @@ function GridConsumptionChart({ gridData, loading }) {
   return html`
     <section class="card" id="GridConsumptionChart">
       <div class="bottom-chart-title">Grid KW Consumption</div>
-      <div class="bottom-chart-container">
-        ${loading ? html`<div class="empty-state">Loading...</div>` : html`<canvas ref=${canvasRef} />`}
+      <div class="bottom-chart-container" style=${{ position: 'relative' }}>
+        ${loading ? html`<div class="chart-loading-overlay"><div class="spin"></div>Loading...</div>` : null}
+        <canvas ref=${canvasRef} />
       </div>
     </section>
   `;
@@ -513,8 +515,9 @@ function MonthlyGridDemandChart({ gridId }) {
   return html`
     <section class="card" id="MonthlyGridDemandChart">
       <div class="bottom-chart-title">Monthly Grid KW Demand</div>
-      <div class="bottom-chart-container">
-        ${loading ? html`<div class="empty-state">Loading...</div>` : html`<canvas ref=${canvasRef} />`}
+      <div class="bottom-chart-container" style=${{ position: 'relative' }}>
+        ${loading ? html`<div class="chart-loading-overlay"><div class="spin"></div>Loading...</div>` : null}
+        <canvas ref=${canvasRef} />
       </div>
       <div class="flex justify-end gap-2 mt-3">
         <select class="filter-dropdown" value=${year} onChange=${(e) => setYear(Number(e.target.value))}>
