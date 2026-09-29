@@ -299,7 +299,7 @@ function MeterDemandChart({ meters, loading }) {
     if (!canvasRef.current || loading) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    const labels = paginatedMeters.map((m) => m.meter_code);
+    const labels = paginatedMeters.map((m) => (m.meter_description ? m.meter_description.trim() : m.meter_name) || m.meter_code || `Meter ${m.meter_id}`);
     const values = paginatedMeters.map((m) => parseFloat(m.total_used || 0));
     const colors = paginatedMeters.map((_, i) => `hsl(${(i * 35) % 360}, 70%, 50%)`);
 
@@ -328,7 +328,16 @@ function MeterDemandChart({ meters, loading }) {
           }
         },
         scales: {
-          x: { title: { display: true, text: 'Meters on Selected Floor/Area', color: '#6B7280', font: { size: 12 } }, grid: { display: false } },
+          x: { 
+            title: { display: true, text: 'Meters on Selected Floor/Area', color: '#6B7280', font: { size: 12 } }, 
+            grid: { display: false },
+            ticks: {
+              maxRotation: 45,
+              minRotation: 0,
+              autoSkip: false,
+              font: { size: 11 }
+            }
+          },
           y: { title: { display: true, text: 'KW Total', color: '#6B7280', font: { size: 12 } }, grid: { color: '#E5E7EB', borderDash: [4, 4] } }
         }
       }
@@ -383,7 +392,7 @@ function BuildingConsumptionChart({ meters, loading }) {
     if (!canvasRef.current || loading) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    const labels = (meters || []).map((m) => m.meter_code || 'Meter');
+    const labels = (meters || []).map((m) => (m.meter_description ? m.meter_description.trim() : m.meter_name) || m.meter_code || 'Meter');
     const values = (meters || []).map((m) => parseFloat(m.total_used || 0));
     const sliceColors = (meters || []).map((_, i) => `hsl(${(i * 45) % 360}, 65%, 55%)`);
 
