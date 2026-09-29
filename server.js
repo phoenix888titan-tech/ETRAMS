@@ -241,13 +241,17 @@ app.get('/api/meters', async (req, res) => {
       where += ' AND mr.reading_datetime <= ?';
       params.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
     }
-    if (month) {
+    if (year && month) {
+      const nextMonth = parseInt(month) === 12 ? 1 : parseInt(month) + 1;
+      const nextYear = parseInt(month) === 12 ? parseInt(year) + 1 : parseInt(year);
+      where += ' AND mr.reading_datetime >= ? AND mr.reading_datetime < ?';
+      params.push(`${year}-${String(month).padStart(2, '0')}-01 00:00:00`, `${nextYear}-${String(nextMonth).padStart(2, '0')}-01 00:00:00`);
+    } else if (year) {
+      where += ' AND mr.reading_datetime >= ? AND mr.reading_datetime < ?';
+      params.push(`${year}-01-01 00:00:00`, `${parseInt(year) + 1}-01-01 00:00:00`);
+    } else if (month) {
       where += ' AND MONTH(mr.reading_datetime) = ?';
       params.push(month);
-    }
-    if (year) {
-      where += ' AND YEAR(mr.reading_datetime) = ?';
-      params.push(year);
     }
 
     let hierarchyWhere = "WHERE 1=1";
@@ -378,13 +382,17 @@ app.get('/api/meters/csv', async (req, res) => {
       where += ' AND mr.reading_datetime <= ?';
       params.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
     }
-    if (month) {
+    if (year && month) {
+      const nextMonth = parseInt(month) === 12 ? 1 : parseInt(month) + 1;
+      const nextYear = parseInt(month) === 12 ? parseInt(year) + 1 : parseInt(year);
+      where += ' AND mr.reading_datetime >= ? AND mr.reading_datetime < ?';
+      params.push(`${year}-${String(month).padStart(2, '0')}-01 00:00:00`, `${nextYear}-${String(nextMonth).padStart(2, '0')}-01 00:00:00`);
+    } else if (year) {
+      where += ' AND mr.reading_datetime >= ? AND mr.reading_datetime < ?';
+      params.push(`${year}-01-01 00:00:00`, `${parseInt(year) + 1}-01-01 00:00:00`);
+    } else if (month) {
       where += ' AND MONTH(mr.reading_datetime) = ?';
       params.push(month);
-    }
-    if (year) {
-      where += ' AND YEAR(mr.reading_datetime) = ?';
-      params.push(year);
     }
 
     let hierarchyWhere = "WHERE 1=1";
@@ -580,12 +588,12 @@ app.get('/api/building-demand', async (req, res) => {
     let mrWhere = 'WHERE 1=1';
     const mrParams = [];
     if (start_date) {
-      mrWhere += ' AND DATE(mr.reading_datetime) >= ?';
-      mrParams.push(start_date);
+      mrWhere += ' AND mr.reading_datetime >= ?';
+      mrParams.push(`${start_date} 00:00:00`);
     }
     if (end_date) {
-      mrWhere += ' AND DATE(mr.reading_datetime) <= ?';
-      mrParams.push(end_date);
+      mrWhere += ' AND mr.reading_datetime <= ?';
+      mrParams.push(`${end_date} 23:59:59`);
     }
 
     let mainWhere = "WHERE 1=1";
@@ -876,7 +884,7 @@ app.get('/api/monthly-grid-kw', async (req, res) => {
     const targetYear = year || new Date().getFullYear();
     
     let mainWhere = "WHERE 1=1";
-    const mainParams = [targetYear];
+    const mainParams = [`${targetYear}-01-01 00:00:00`, `${parseInt(targetYear) + 1}-01-01 00:00:00`];
     if (meter_type !== 'all') {
       mainWhere += " AND pm.meter_type = ?";
       mainParams.push(meter_type);
@@ -900,7 +908,7 @@ app.get('/api/monthly-grid-kw', async (req, res) => {
         JOIN areas a ON pm.area_id = a.area_id
         JOIN buildings b ON a.building_id = b.building_id
         JOIN grids g ON b.grid_id = g.grid_id
-        WHERE YEAR(mr.reading_datetime) = ? ${mainWhere.replace('WHERE 1=1', '')}
+        WHERE mr.reading_datetime >= ? AND mr.reading_datetime < ? ${mainWhere.replace('WHERE 1=1', '')}
       )
     `;
     const query = `
