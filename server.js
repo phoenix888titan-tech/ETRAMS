@@ -216,85 +216,98 @@ app.get('/api/summary', async (req, res) => {
 // Get paginated meters
 app.get('/api/meters', async (req, res) => {
   try {
-    const { grid_id, building_id, area_id, status, month, year, start_date, end_date, meter_type = 'all', page = 1, limit = 25, sort = 'meter_id', order = 'asc' } = req.query;
+    const { page, limit, start_date, end_date, year, month, grid_id, building_id, area_id, meter_type, status, sort, order } = req.query;
 
     const pageLimit = Math.min(parseInt(limit, 10) || 25, 10000);
     const offset = (Math.max(1, parseInt(page, 10) || 1) - 1) * pageLimit;
 
-    let where = 'WHERE 1=1';
-    const params = [];
-
+    // --- Date parsing for bounds ---
+    let start_bound = null;
+    let end_bound = null;
+    
     if (start_date) {
-      where += ' AND mr.reading_datetime >= ?';
-      params.push(start_date.includes(' ') || start_date.includes('T') ? start_date.replace('T', ' ') : `${start_date} 00:00:00`);
+      start_bound = start_date.includes('T') || start_date.includes(' ') ? start_date.replace('T', ' ') : start_date + ' 00:00:00';
     }
     if (end_date) {
-      where += ' AND mr.reading_datetime <= ?';
-      params.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
+      end_bound = end_date.includes('T') || end_date.includes(' ') ? end_date.replace('T', ' ') : end_date + ' 23:59:59';
     }
     if (year && month) {
       const nextMonth = parseInt(month) === 12 ? 1 : parseInt(month) + 1;
-      const nextYear = parseInt(month) === 12 ? parseInt(year) + 1 : parseInt(year);
-      where += ' AND mr.reading_datetime >= ? AND mr.reading_datetime < ?';
-      params.push(`${year}-${String(month).padStart(2, '0')}-01 00:00:00`, `${nextYear}-${String(nextMonth).padStart(2, '0')}-01 00:00:00`);
+      const nextYear  = parseInt(month) === 12 ? parseInt(year) + 1 : parseInt(year);
+      start_bound = year + '-' + String(month).padStart(2, '0') + '-01 00:00:00';
+      end_bound = nextYear + '-' + String(nextMonth).padStart(2, '0') + '-01 00:00:00';
     } else if (year) {
-      where += ' AND mr.reading_datetime >= ? AND mr.reading_datetime < ?';
-      params.push(`${year}-01-01 00:00:00`, `${parseInt(year) + 1}-01-01 00:00:00`);
-    } else if (month) {
-      where += ' AND MONTH(mr.reading_datetime) = ?';
-      params.push(month);
+      start_bound = year + '-01-01 00:00:00';
+      end_bound = (parseInt(year) + 1) + '-01-01 00:00:00';
     }
+    
+    if (!start_bound) start_bound = '1970-01-01 00:00:00';
+    if (!end_bound) end_bound = '2099-12-31 23:59:59';
 
-    let hierarchyWhere = "WHERE 1=1";
+    let hierarchyWhere = 'WHERE 1=1';
     const hierarchyParams = [];
     if (isSpecificMeterType(meter_type)) {
-      hierarchyWhere += " AND pm.meter_type = ?";
+      hierarchyWhere += ' AND pm.meter_type = ?';
       hierarchyParams.push(meter_type.toLowerCase());
     }
-
-    if (grid_id) {
-      hierarchyWhere += ' AND g.grid_id = ?';
-      hierarchyParams.push(grid_id);
-    }
-    if (building_id) {
-      hierarchyWhere += ' AND b.building_id = ?';
-      hierarchyParams.push(building_id);
-    }
-    if (area_id) {
-      hierarchyWhere += ' AND pm.area_id = ?';
-      hierarchyParams.push(area_id);
-    }
-    if (status) {
-      hierarchyWhere += ' AND pm.status = ?';
-      hierarchyParams.push(status);
-    }
+    if (grid_id)     { hierarchyWhere += ' AND g.grid_id = ?';     hierarchyParams.push(grid_id); }
+    if (building_id) { hierarchyWhere += ' AND b.building_id = ?'; hierarchyParams.push(building_id); }
+    if (area_id)     { hierarchyWhere += ' AND pm.area_id = ?';    hierarchyParams.push(area_id); }
+    if (status)      { hierarchyWhere += ' AND pm.status = ?';     hierarchyParams.push(status); }
 
     const validSortColumns = ['meter_id', 'meter_code', 'current_reading', 'active_power', 'total_energy'];
     const sortColumn = validSortColumns.includes(sort) ? sort : 'meter_id';
-    const sortOrder = order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+    const sortOrder = order && order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
 
-    // Build the query to get first/last readings per meter within the date range
     const cte = `
-      WITH RankedReadings AS (
+      WITH LastRead AS (
         SELECT 
-          mr.meter_id,
-          mr.current_reading,
-          mr.active_power,
-          mr.amps,
-          mr.freq,
-          mr.power_factor,
-          mr.vll,
-          mr.vln,
-          mr.reading_datetime,
-          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
-          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
+          mr.meter_id, mr.current_reading, mr.active_power, mr.amps, mr.freq,
+          mr.power_factor, mr.vll, mr.vln, mr.reading_datetime,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn
         FROM meter_readings mr
         JOIN power_meters pm ON mr.meter_id = pm.meter_id
         JOIN areas a ON pm.area_id = a.area_id
         JOIN buildings b ON a.building_id = b.building_id
         JOIN grids g ON b.grid_id = g.grid_id
-        ${where} ${hierarchyWhere.replace('WHERE 1=1', '')}
+        ${hierarchyWhere} AND mr.reading_datetime <= ?
+      ),
+      FirstRead AS (
+        SELECT mr.meter_id, mr.current_reading,
+               ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn
+        FROM meter_readings mr
+        JOIN power_meters pm ON mr.meter_id = pm.meter_id
+        JOIN areas a ON pm.area_id = a.area_id
+        JOIN buildings b ON a.building_id = b.building_id
+        JOIN grids g ON b.grid_id = g.grid_id
+        ${hierarchyWhere} AND mr.reading_datetime <= ?
       )
+    `;
+
+    const dataQuery = `
+      ${cte}
+      SELECT
+        pm.meter_id, pm.meter_code, pm.meter_description, pm.meter_type,
+        g.grid_name, b.building_name, a.area_name,
+        COALESCE(last_read.current_reading, 0) AS current_reading,
+        COALESCE(first_read.current_reading, 0) AS previous_reading,
+        (COALESCE(last_read.current_reading, 0) - COALESCE(first_read.current_reading, 0)) AS total_used,
+        COALESCE(last_read.active_power, 0) AS active_power,
+        COALESCE(last_read.amps, 0) AS amps,
+        COALESCE(last_read.freq, 0) AS freq,
+        COALESCE(last_read.power_factor, 0) AS power_factor,
+        COALESCE(last_read.vll, 0) AS vll,
+        COALESCE(last_read.vln, 0) AS vln,
+        pm.status, last_read.reading_datetime
+      FROM power_meters pm
+      JOIN areas a ON pm.area_id = a.area_id
+      JOIN buildings b ON a.building_id = b.building_id
+      JOIN grids g ON b.grid_id = g.grid_id
+      LEFT JOIN LastRead last_read ON pm.meter_id = last_read.meter_id AND last_read.rn = 1
+      LEFT JOIN FirstRead first_read ON pm.meter_id = first_read.meter_id AND first_read.rn = 1
+      ${hierarchyWhere}
+      ORDER BY ${sortColumn} ${sortOrder}
+      LIMIT ? OFFSET ?
     `;
 
     const countQuery = `
@@ -309,7 +322,7 @@ app.get('/api/meters', async (req, res) => {
     const [countRows] = await db.query(countQuery, hierarchyParams);
     const total = countRows[0].total;
 
-    const [dataRows] = await db.query(dataQuery, [...params, ...hierarchyParams, ...hierarchyParams, pageLimit, offset]);
+    const [dataRows] = await db.query(dataQuery, [...hierarchyParams, end_bound, ...hierarchyParams, start_bound, ...hierarchyParams, pageLimit, offset]);
 
     res.json({
       data: dataRows,
@@ -328,33 +341,31 @@ app.get('/api/meters', async (req, res) => {
 
 app.get('/api/meters/csv', async (req, res) => {
   try {
-    const { grid_id, building_id, area_id, status, month, year, start_date, end_date, meter_type = 'all' } = req.query;
+    const { start_date, end_date, year, month, grid_id, building_id, area_id, meter_type, status } = req.query;
 
-    // --- Date filter (applied inside CTE only) ---
-    let dateWhere = '';
-    const dateParams = [];
+    // --- Date parsing for bounds ---
+    let start_bound = null;
+    let end_bound = null;
+    
     if (start_date) {
-      dateWhere += ' AND mr.reading_datetime >= ?';
-      dateParams.push(start_date.includes('T') || start_date.includes(' ') ? start_date.replace('T', ' ') : `${start_date} 00:00:00`);
+      start_bound = start_date.includes('T') || start_date.includes(' ') ? start_date.replace('T', ' ') : start_date + ' 00:00:00';
     }
     if (end_date) {
-      dateWhere += ' AND mr.reading_datetime <= ?';
-      dateParams.push(end_date.includes('T') || end_date.includes(' ') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
+      end_bound = end_date.includes('T') || end_date.includes(' ') ? end_date.replace('T', ' ') : end_date + ' 23:59:59';
     }
     if (year && month) {
       const nextMonth = parseInt(month) === 12 ? 1 : parseInt(month) + 1;
       const nextYear  = parseInt(month) === 12 ? parseInt(year) + 1 : parseInt(year);
-      dateWhere += ' AND mr.reading_datetime >= ? AND mr.reading_datetime < ?';
-      dateParams.push(`${year}-${String(month).padStart(2, '0')}-01 00:00:00`, `${nextYear}-${String(nextMonth).padStart(2, '0')}-01 00:00:00`);
+      start_bound = year + '-' + String(month).padStart(2, '0') + '-01 00:00:00';
+      end_bound = nextYear + '-' + String(nextMonth).padStart(2, '0') + '-01 00:00:00';
     } else if (year) {
-      dateWhere += ' AND mr.reading_datetime >= ? AND mr.reading_datetime < ?';
-      dateParams.push(`${year}-01-01 00:00:00`, `${parseInt(year) + 1}-01-01 00:00:00`);
-    } else if (month) {
-      dateWhere += ' AND MONTH(mr.reading_datetime) = ?';
-      dateParams.push(month);
+      start_bound = year + '-01-01 00:00:00';
+      end_bound = (parseInt(year) + 1) + '-01-01 00:00:00';
     }
+    
+    if (!start_bound) start_bound = '1970-01-01 00:00:00';
+    if (!end_bound) end_bound = '2099-12-31 23:59:59';
 
-    // --- Hierarchy / meter filter (applied to both CTE and outer query) ---
     let hierarchyWhere = 'WHERE 1=1';
     const hierarchyParams = [];
     if (isSpecificMeterType(meter_type)) {
@@ -366,22 +377,28 @@ app.get('/api/meters/csv', async (req, res) => {
     if (area_id)     { hierarchyWhere += ' AND pm.area_id = ?';    hierarchyParams.push(area_id); }
     if (status)      { hierarchyWhere += ' AND pm.status = ?';     hierarchyParams.push(status); }
 
-    // CTE filters readings by date AND hierarchy; outer query filters meters by hierarchy only.
-    // LEFT JOIN means meters always appear even when no readings exist in the date range.
     const csvQuery = `
-      WITH RankedReadings AS (
-        SELECT
-          mr.meter_id,
-          mr.current_reading, mr.active_power, mr.amps, mr.freq,
+      WITH LastRead AS (
+        SELECT 
+          mr.meter_id, mr.current_reading, mr.active_power, mr.amps, mr.freq,
           mr.power_factor, mr.vll, mr.vln, mr.reading_datetime,
-          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC)  AS rn_asc,
-          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) AS rn_desc
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn
         FROM meter_readings mr
         JOIN power_meters pm ON mr.meter_id = pm.meter_id
         JOIN areas       a  ON pm.area_id   = a.area_id
         JOIN buildings   b  ON a.building_id = b.building_id
         JOIN grids       g  ON b.grid_id    = g.grid_id
-        WHERE 1=1 ${dateWhere} ${hierarchyWhere.replace('WHERE 1=1', '')}
+        ${hierarchyWhere} AND mr.reading_datetime <= ?
+      ),
+      FirstRead AS (
+        SELECT mr.meter_id, mr.current_reading,
+               ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn
+        FROM meter_readings mr
+        JOIN power_meters pm ON mr.meter_id = pm.meter_id
+        JOIN areas       a  ON pm.area_id   = a.area_id
+        JOIN buildings   b  ON a.building_id = b.building_id
+        JOIN grids       g  ON b.grid_id    = g.grid_id
+        ${hierarchyWhere} AND mr.reading_datetime <= ?
       )
       SELECT
         pm.meter_code                                                                    AS MeterID,
@@ -404,18 +421,15 @@ app.get('/api/meters/csv', async (req, res) => {
       JOIN areas     a ON pm.area_id    = a.area_id
       JOIN buildings b ON a.building_id = b.building_id
       JOIN grids     g ON b.grid_id     = g.grid_id
-      LEFT JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc  = 1
-      LEFT JOIN RankedReadings last_read  ON pm.meter_id = last_read.meter_id  AND last_read.rn_desc = 1
+      LEFT JOIN LastRead  last_read  ON pm.meter_id = last_read.meter_id  AND last_read.rn = 1
+      LEFT JOIN FirstRead first_read ON pm.meter_id = first_read.meter_id AND first_read.rn = 1
       ${hierarchyWhere}
       ORDER BY g.grid_name, b.building_name, pm.meter_code ASC
     `;
 
-    const allParams = [...dateParams, ...hierarchyParams, ...hierarchyParams];
+    const allParams = [...hierarchyParams, end_bound, ...hierarchyParams, start_bound, ...hierarchyParams];
     const [rows] = await db.query(csvQuery, allParams);
 
-    // Always generate a CSV — even if readings are all zero (no readings in date range).
-    // rows will always contain meters (from the outer LEFT JOIN); only truly empty when
-    // no meters match the hierarchy filters at all.
     if (!rows.length) {
       res.header('Content-Type', 'text/csv');
       res.attachment('meter_report.csv');
