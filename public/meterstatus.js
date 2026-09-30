@@ -98,6 +98,14 @@ const FileIcon = () => html`
   </svg>
 `;
 
+const DownloadIcon = () => html`
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+`;
+
 const ActivityIcon = () => html`
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -236,7 +244,7 @@ function AppHeader() {
   `;
 }
 
-function PageHeader({ onExportPDF }) {
+function PageHeader({ onExportPDF, onDownloadCSV }) {
   const customTitle = window.getSectionTitle ? window.getSectionTitle('meterStatistics', 'Meter Detail') : 'Meter Detail';
   return html`
     <section class="PageHeader" id="PageHeader">
@@ -244,10 +252,16 @@ function PageHeader({ onExportPDF }) {
         <span class="page-icon">🔌</span>
         <h2 class="page-title">${customTitle}</h2>
       </div>
-      <button class="btn btn-secondary btn-export-pdf-action" id="btn-export-pdf" onClick=${onExportPDF}>
-        <${FileIcon} />
-        Export PDF
-      </button>
+      <div style=${{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <button class="btn btn-secondary" id="btn-download-csv" onClick=${onDownloadCSV} title="Download CSV">
+          <${DownloadIcon} />
+          Download CSV
+        </button>
+        <button class="btn btn-secondary btn-export-pdf-action" id="btn-export-pdf" onClick=${onExportPDF}>
+          <${FileIcon} />
+          Export PDF
+        </button>
+      </div>
     </section>
   `;
 }
@@ -685,13 +699,30 @@ function App() {
     }
   };
 
+  const handleDownloadCSV = () => {
+    const params = new URLSearchParams();
+    if (filters.gridId) params.set('grid_id', filters.gridId);
+    if (filters.buildingId) params.set('building_id', filters.buildingId);
+    if (filters.areaId) params.set('area_id', filters.areaId);
+    if (filters.meterType && filters.meterType !== 'all') params.set('meter_type', filters.meterType);
+    params.set('start_date', dateRange.startDate);
+    params.set('end_date', dateRange.endDate);
+    const url = `/api/meters/csv?${params.toString()}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `meter-status-${dateRange.startDate}-to-${dateRange.endDate}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return html`
     <div>
       <${AppHeader} />
       <div class="app-layout">
         <etrams-sidebar active="btn-nav-meter-status"></etrams-sidebar>
         <main ref=${contentRef} class="main-content">
-          <${PageHeader} onExportPDF=${handleExportPDF} />
+          <${PageHeader} onExportPDF=${handleExportPDF} onDownloadCSV=${handleDownloadCSV} />
           <div class="pdf-metadata-header" style=${{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px 16px', borderRadius: '6px', marginBottom: '12px', fontSize: '13px', color: '#334155', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
             <span><strong>Grid:</strong> ${selectedGridObj ? selectedGridObj.name : 'N/A'}</span>
             <span><strong>Building:</strong> ${selectedBuildingObj ? selectedBuildingObj.name : 'N/A'}</span>
