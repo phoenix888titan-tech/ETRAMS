@@ -389,14 +389,20 @@ function BuildingConsumptionChart({ meters, loading }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
 
+  const totalKw = useMemo(() => {
+    return (meters || []).reduce((sum, m) => sum + (parseFloat(m.total_used) || 0), 0);
+  }, [meters]);
+
   useEffect(() => {
-    if (!canvasRef.current || loading) return;
+    if (!canvasRef.current || loading || !meters || meters.length === 0 || totalKw <= 0) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    const labels = (meters || []).map((m) => (m.meter_description ? m.meter_description.trim() : m.meter_name) || m.meter_code || 'Meter');
-    const values = (meters || []).map((m) => parseFloat(m.total_used || 0));
-    const sliceColors = (meters || []).map((_, i) => `hsl(${(i * 45) % 360}, 65%, 55%)`);
+    const nonZeroMeters = meters.filter((m) => parseFloat(m.total_used) > 0);
+    const dataToUse = nonZeroMeters.length > 0 ? nonZeroMeters : meters;
 
+    const labels = dataToUse.map((m) => (m.meter_description ? m.meter_description.trim() : m.meter_name) || m.meter_code || 'Meter');
+    const values = dataToUse.map((m) => Math.max(0, parseFloat(m.total_used || 0)));
+    const sliceColors = dataToUse.map((_, i) => `hsl(${(i * 45) % 360}, 65%, 55%)`);
 
     chartRef.current = new Chart(canvasRef.current.getContext('2d'), {
       type: 'pie',
@@ -413,7 +419,15 @@ function BuildingConsumptionChart({ meters, loading }) {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              font: { size: 11 },
+              color: '#4B5563'
+            }
+          },
           datalabels: { display: false },
           tooltip: {
             callbacks: {
@@ -433,14 +447,17 @@ function BuildingConsumptionChart({ meters, loading }) {
     return () => {
       if (chartRef.current) chartRef.current.destroy();
     };
-  }, [meters, loading]);
+  }, [meters, loading, totalKw]);
 
   return html`
     <section class="card" id="BuildingConsumptionChart">
       <div class="bottom-chart-title">Building KW Consumption</div>
       <div class="bottom-chart-container" style=${{ position: 'relative' }}>
-        ${loading ? html`<div class="chart-loading-overlay"><div class="spin"></div>Loading...</div>` : null}
-        <canvas ref=${canvasRef} />
+        ${loading
+          ? html`<div class="chart-loading-overlay"><div class="spin"></div>Loading...</div>`
+          : totalKw <= 0 || !meters || meters.length === 0
+            ? html`<div class="empty-state" style=${{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF', fontSize: '13px' }}>No consumption recorded for selected date range (Total: 0 KW). Try selecting a wider date range.</div>`
+            : html`<canvas ref=${canvasRef} />`}
       </div>
     </section>
   `;

@@ -383,13 +383,20 @@ function GridConsumptionChart({ gridData, loading }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
 
+  const totalKw = useMemo(() => {
+    return (gridData || []).reduce((sum, d) => sum + (parseFloat(d.totalKw) || 0), 0);
+  }, [gridData]);
+
   useEffect(() => {
-    if (!canvasRef.current || loading) return;
+    if (!canvasRef.current || loading || !gridData || gridData.length === 0 || totalKw <= 0) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    const labels = gridData.map((d) => d.buildingName || d.gridName || '');
-    const values = gridData.map((d) => parseFloat(d.totalKw));
-    const colors = gridData.map((d, i) => `hsl(${(i * 45) % 360}, 65%, 50%)`);
+    const nonZeroData = gridData.filter((d) => parseFloat(d.totalKw) > 0);
+    const dataToUse = nonZeroData.length > 0 ? nonZeroData : gridData;
+
+    const labels = dataToUse.map((d) => d.buildingName || d.gridName || 'Building');
+    const values = dataToUse.map((d) => Math.max(0, parseFloat(d.totalKw) || 0));
+    const colors = dataToUse.map((d, i) => d.gridColor || `hsl(${(i * 45) % 360}, 65%, 50%)`);
 
     chartRef.current = new Chart(canvasRef.current.getContext('2d'), {
       type: 'pie',
@@ -406,7 +413,15 @@ function GridConsumptionChart({ gridData, loading }) {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              font: { size: 11 },
+              color: '#4B5563'
+            }
+          },
           datalabels: { display: false },
           tooltip: {
             callbacks: {
@@ -426,14 +441,17 @@ function GridConsumptionChart({ gridData, loading }) {
     return () => {
       if (chartRef.current) chartRef.current.destroy();
     };
-  }, [gridData, loading]);
+  }, [gridData, loading, totalKw]);
 
   return html`
     <section class="card" id="GridConsumptionChart">
       <div class="bottom-chart-title">Grid KW Consumption</div>
       <div class="bottom-chart-container" style=${{ position: 'relative' }}>
-        ${loading ? html`<div class="chart-loading-overlay"><div class="spin"></div>Loading...</div>` : null}
-        <canvas ref=${canvasRef} />
+        ${loading
+          ? html`<div class="chart-loading-overlay"><div class="spin"></div>Loading...</div>`
+          : totalKw <= 0 || !gridData || gridData.length === 0
+            ? html`<div class="empty-state" style=${{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF', fontSize: '13px' }}>No consumption recorded for selected date range (Total: 0 KW). Try selecting a wider date range.</div>`
+            : html`<canvas ref=${canvasRef} />`}
       </div>
     </section>
   `;

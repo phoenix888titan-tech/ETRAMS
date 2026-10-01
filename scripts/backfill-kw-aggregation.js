@@ -22,6 +22,7 @@ async function aggregateYear(year) {
     ${cte}
     SELECT
       g.grid_id AS grid_id,
+      g.grid_name AS grid_name,
       ${year} AS year,
       first_read.read_month AS month,
       SUM(COALESCE(last_read.current_reading,0) - COALESCE(first_read.current_reading,0)) AS total_kw
@@ -31,10 +32,13 @@ async function aggregateYear(year) {
     JOIN grids g ON b.grid_id = g.grid_id
     JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
     JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1 AND first_read.read_month = last_read.read_month
-    GROUP BY g.grid_id, month
+    GROUP BY g.grid_id, g.grid_name, month
+    ORDER BY g.grid_id, month
   `;
   const [rows] = await db.query(query, [...dateParams, ...dateParams]);
+  console.log(`Year ${year}: found ${rows.length} aggregated grid-month records:`);
   for (const row of rows) {
+    console.log(`  -> Grid ${row.grid_id} (${row.grid_name}), Month ${row.month}: ${row.total_kw} kW`);
     await db.query(
       `INSERT INTO kw_aggregated_monthly (grid_id, year, month, total_kw) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE total_kw = VALUES(total_kw), updated_at = CURRENT_TIMESTAMP`,
       [row.grid_id, row.year, row.month, row.total_kw]
