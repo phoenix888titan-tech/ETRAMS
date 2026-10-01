@@ -485,7 +485,7 @@ function MonthlyGridDemandChart() {
     if (!canvasRef.current) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    const labels = data.map((d) => d.month_name.slice(0, 3));
+    const labels = data.map((d) => (d.month_name ? d.month_name.slice(0, 3) : `M${d.month_num}`));
     const values = data.map((d) => d.total_kw);
     const barColor = '#3B82F6';
 

@@ -851,7 +851,6 @@ app.get('/api/grid-loop-demand', async (req, res) => {
         SELECT 
           mr.meter_id,
           mr.current_reading,
-          mr.reading_datetime,
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
         FROM meter_readings mr
@@ -860,6 +859,15 @@ app.get('/api/grid-loop-demand', async (req, res) => {
         JOIN buildings b ON a.building_id = b.building_id
         JOIN grids g ON b.grid_id = g.grid_id
         ${mrWhere} ${hierarchyWhere.replace('WHERE 1=1', '')}
+      ),
+      MeterBounds AS (
+        SELECT 
+          meter_id,
+          MAX(CASE WHEN rn_asc = 1 THEN current_reading END) as first_reading,
+          MAX(CASE WHEN rn_desc = 1 THEN current_reading END) as last_reading
+        FROM RankedReadings
+        WHERE rn_asc = 1 OR rn_desc = 1
+        GROUP BY meter_id
       )
     `;
 
@@ -872,13 +880,12 @@ app.get('/api/grid-loop-demand', async (req, res) => {
         b.building_id AS buildingId,
         b.building_code AS buildingCode,
         b.building_name AS buildingName,
-        SUM(COALESCE(last_read.current_reading, 0) - COALESCE(first_read.current_reading, 0)) AS totalKw
+        SUM(COALESCE(mb.last_reading, 0) - COALESCE(mb.first_reading, 0)) AS totalKw
       FROM power_meters pm
       JOIN areas a ON pm.area_id = a.area_id
       JOIN buildings b ON a.building_id = b.building_id
       JOIN grids g ON b.grid_id = g.grid_id
-      LEFT JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
-      LEFT JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1
+      LEFT JOIN MeterBounds mb ON pm.meter_id = mb.meter_id
       ${hierarchyWhere}
       GROUP BY g.grid_id, g.grid_name, g.grid_color, b.building_id, b.building_code, b.building_name
       ORDER BY g.grid_id, b.building_id
@@ -932,7 +939,6 @@ app.get('/api/building-area-demand', async (req, res) => {
         SELECT 
           mr.meter_id,
           mr.current_reading,
-          mr.reading_datetime,
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
           ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
         FROM meter_readings mr
@@ -941,6 +947,15 @@ app.get('/api/building-area-demand', async (req, res) => {
         JOIN buildings b ON a.building_id = b.building_id
         JOIN grids g ON b.grid_id = g.grid_id
         ${mrWhere} ${hierarchyWhere.replace('WHERE 1=1', '')}
+      ),
+      MeterBounds AS (
+        SELECT 
+          meter_id,
+          MAX(CASE WHEN rn_asc = 1 THEN current_reading END) as first_reading,
+          MAX(CASE WHEN rn_desc = 1 THEN current_reading END) as last_reading
+        FROM RankedReadings
+        WHERE rn_asc = 1 OR rn_desc = 1
+        GROUP BY meter_id
       )
     `;
 
@@ -952,13 +967,12 @@ app.get('/api/building-area-demand', async (req, res) => {
         a.area_id AS areaId,
         a.area_name AS areaName,
         g.grid_color AS gridColor,
-        SUM(COALESCE(last_read.current_reading, 0) - COALESCE(first_read.current_reading, 0)) AS totalKw
+        SUM(COALESCE(mb.last_reading, 0) - COALESCE(mb.first_reading, 0)) AS totalKw
       FROM power_meters pm
       JOIN areas a ON pm.area_id = a.area_id
       JOIN buildings b ON a.building_id = b.building_id
       JOIN grids g ON b.grid_id = g.grid_id
-      LEFT JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
-      LEFT JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1
+      LEFT JOIN MeterBounds mb ON pm.meter_id = mb.meter_id
       ${hierarchyWhere}
       GROUP BY b.building_id, b.building_name, a.area_id, a.area_name, g.grid_color
       ORDER BY b.building_name, a.area_name
@@ -972,23 +986,32 @@ app.get('/api/building-area-demand', async (req, res) => {
   }
 });
 
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
 app.get('/api/monthly-grid-kw', async (req, res) => {
   try {
     const { year, grid_id } = req.query;
-    const targetYear = year || new Date().getFullYear();
+    const targetYear = parseInt(year, 10) || new Date().getFullYear();
     const params = [targetYear];
     let sql = `SELECT month AS month_num,
-                      MONTHNAME(STR_TO_DATE(month, '%m')) AS month_name,
-                      total_kw
+                      SUM(total_kw) AS total_kw
                FROM kw_aggregated_monthly
                WHERE year = ?`;
-    if (grid_id) {
+    if (grid_id && grid_id !== 'all') {
       sql += ' AND grid_id = ?';
       params.push(grid_id);
     }
-    sql += ' ORDER BY month_num';
+    sql += ' GROUP BY month ORDER BY month_num';
     const [rows] = await db.query(sql, params);
-    res.json(rows);
+    const result = rows.map((r) => ({
+      month_num: r.month_num,
+      month_name: MONTH_NAMES[r.month_num - 1] || `Month ${r.month_num}`,
+      total_kw: r.total_kw
+    }));
+    res.json(result);
   } catch (err) {
     console.error('API Error:', err.message);
     res.status(500).json({ error: 'Server Error: ' + err.message });
