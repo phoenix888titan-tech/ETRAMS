@@ -11,3 +11,20 @@ nginx/
 Dockerfile
 docker-compose.yml
 .dockerignore
+
+# Dev/debug scripts
+patch*.py
+patch*.js
+fix*.py
+fix*.js
+explain*.js
+test*.js
+get_grids*.js
+migrate_*.js
+check_cols.js
+test-search.js
+puppeteer-test/
+scratch/
+_dom.html
+center-title.js
+move_dropdown.py

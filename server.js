@@ -4,12 +4,13 @@ const cors = require('cors');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const db = require('./db');
+const cron = require('node-cron');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:3000' }));
+app.use(cors({ origin: process.env.CORS_ORIGIN || true, credentials: true }));
 app.use(express.json());
 
 // --- Authentication (token cookie, in-memory sessions) ---
@@ -52,7 +53,7 @@ function clearSession(req, res) {
   res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; HttpOnly; Path=/; Max-Age=0`);
 }
 
-// All /api/* routes require a valid session, except health check and login.
+// All /api routes require a valid session, except health check and login.
 app.use('/api', (req, res, next) => {
   if (req.path === '/health' || req.path === '/auth/login') return next();
   const user = getSessionUser(req);
@@ -76,7 +77,7 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts, please try again after 15 minutes.' }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body || {};
     if (!username || !password) {
@@ -158,6 +159,50 @@ app.get('/api/filters', async (req, res) => {
     res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
+
+async function refreshMonthlyGridKwAggregation(targetYear) {
+  const dateParams = [`${targetYear}-01-01 00:00:00`, `${parseInt(targetYear) + 1}-01-01 00:00:00`];
+  const cte = `
+    WITH RankedReadings AS (
+      SELECT 
+        mr.meter_id,
+        MONTH(mr.reading_datetime) as read_month,
+        mr.current_reading,
+        ROW_NUMBER() OVER (PARTITION BY mr.meter_id, MONTH(mr.reading_datetime) ORDER BY mr.reading_datetime ASC) as rn_asc,
+        ROW_NUMBER() OVER (PARTITION BY mr.meter_id, MONTH(mr.reading_datetime) ORDER BY mr.reading_datetime DESC) as rn_desc
+      FROM meter_readings mr
+      JOIN power_meters pm ON mr.meter_id = pm.meter_id
+      JOIN areas a ON pm.area_id = a.area_id
+      JOIN buildings b ON a.building_id = b.building_id
+      JOIN grids g ON b.grid_id = g.grid_id
+      WHERE mr.reading_datetime >= ? AND mr.reading_datetime < ?
+    )
+  `;
+  const query = `
+    ${cte}
+    SELECT
+      g.grid_id AS grid_id,
+      ${targetYear} AS year,
+      first_read.read_month AS month,
+      SUM(COALESCE(last_read.current_reading,0) - COALESCE(first_read.current_reading,0)) AS total_kw
+    FROM power_meters pm
+    JOIN areas a ON pm.area_id = a.area_id
+    JOIN buildings b ON a.building_id = b.building_id
+    JOIN grids g ON b.grid_id = g.grid_id
+    JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
+    JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1 AND first_read.read_month = last_read.read_month
+
+    GROUP BY g.grid_id, month
+  `;
+  // Insert or update aggregated rows
+  const [rows] = await db.query(query, [...dateParams, ...dateParams]);
+  for (const row of rows) {
+    await db.query(
+      `INSERT INTO kw_aggregated_monthly (grid_id, year, month, total_kw) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE total_kw = VALUES(total_kw), updated_at = CURRENT_TIMESTAMP`,
+      [row.grid_id, row.year, row.month, row.total_kw]
+    );
+  }
+}
 
 function isSpecificMeterType(val) {
   if (!val) return false;
@@ -685,6 +730,95 @@ app.get('/api/grid-demand', async (req, res) => {
   }
 });
 
+// Grid Demand CSV Export
+app.get('/api/grid-demand/csv', async (req, res) => {
+  try {
+    const { start_date, end_date, grid_id, meter_type = 'all' } = req.query;
+    // Build filters (same as /api/grid-demand)
+    let mrWhere = 'WHERE 1=1';
+    const mrParams = [];
+    if (start_date) {
+      mrWhere += ' AND mr.reading_datetime >= ?';
+      mrParams.push(start_date.includes(' ') || start_date.includes('T') ? start_date.replace('T', ' ') : `${start_date} 00:00:00`);
+    }
+    if (end_date) {
+      mrWhere += ' AND mr.reading_datetime <= ?';
+      mrParams.push(end_date.includes(' ') || end_date.includes('T') ? end_date.replace('T', ' ') : `${end_date} 23:59:59`);
+    }
+    let mainWhere = "WHERE 1=1";
+    const hierarchyParams = [];
+    if (isSpecificMeterType(meter_type)) {
+      mainWhere += " AND pm.meter_type = ?";
+      hierarchyParams.push(meter_type.toLowerCase());
+    }
+    if (grid_id) {
+      mainWhere += ' AND g.grid_id = ?';
+      hierarchyParams.push(grid_id);
+    }
+    const cte = `
+      WITH RankedReadings AS (
+        SELECT 
+          mr.meter_id,
+          mr.current_reading,
+          mr.reading_datetime,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
+        FROM meter_readings mr
+        JOIN power_meters pm ON mr.meter_id = pm.meter_id
+        JOIN areas a ON pm.area_id = a.area_id
+        JOIN buildings b ON a.building_id = b.building_id
+        JOIN grids g ON b.grid_id = g.grid_id
+        ${mrWhere} ${mainWhere.replace('WHERE 1=1', '')}
+      )
+    `;
+    const query = `
+      ${cte}
+      SELECT
+        g.grid_id AS gridId,
+        g.grid_name AS gridName,
+        g.grid_color AS gridColor,
+        SUM(COALESCE(last_read.current_reading, 0) - COALESCE(first_read.current_reading, 0)) AS totalKw
+      FROM power_meters pm
+      JOIN areas a ON pm.area_id = a.area_id
+      JOIN buildings b ON a.building_id = b.building_id
+      JOIN grids g ON b.grid_id = g.grid_id
+      LEFT JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
+      LEFT JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1
+      ${mainWhere}
+      GROUP BY g.grid_id, g.grid_name, g.grid_color
+      ORDER BY g.grid_id
+    `;
+    const [rows] = await db.query(query, [...mrParams, ...hierarchyParams, ...hierarchyParams]);
+    if (!rows.length) {
+      res.header('Content-Type', 'text/csv');
+      res.attachment('grid_demand_report.csv');
+      return res.send('No grid demand data for the selected filters.\n');
+    }
+    const fields = ['gridId', 'gridName', 'gridColor', 'totalKw'];
+    const escape = (val) => {
+      if (val === null || val === undefined) return '';
+      const s = String(val).replace(/\t/g, ' ').trim();
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    const csvLines = [fields.join(',')];
+    for (const row of rows) {
+      csvLines.push(fields.map(f => escape(row[f])).join(','));
+    }
+    res.header('Content-Type', 'text/csv; charset=utf-8');
+    res.attachment(`grid_demand_${new Date().toISOString().slice(0,10)}.csv`);
+    res.send(csvLines.join('\r\n'));
+  } catch (err) {
+    console.error('API Error:', err.message);
+    res.status(500).json({ error: 'Server Error: ' + err.message });
+  }
+});
+
+// Grid Demand PDF placeholder
+app.get('/api/grid-demand/pdf', async (req, res) => {
+  res.json({ message: 'Use browser print and select Save as PDF for now.' });
+});
+
 app.get('/api/grid-loop-demand', async (req, res) => {
   try {
     const { grid_id, start_date, end_date, meter_type = 'all' } = req.query;
@@ -840,62 +974,27 @@ app.get('/api/building-area-demand', async (req, res) => {
 
 app.get('/api/monthly-grid-kw', async (req, res) => {
   try {
-    const { year, grid_id, meter_type = 'all' } = req.query;
+    const { year, grid_id } = req.query;
     const targetYear = year || new Date().getFullYear();
-    const dateParams = [`${targetYear}-01-01 00:00:00`, `${parseInt(targetYear) + 1}-01-01 00:00:00`];
-    
-    let mainWhere = "WHERE 1=1";
-    const hierarchyParams = [];
-    if (isSpecificMeterType(meter_type)) {
-      mainWhere += " AND pm.meter_type = ?";
-      hierarchyParams.push(meter_type.toLowerCase());
-    }
+    const params = [targetYear];
+    let sql = `SELECT month AS month_num,
+                      MONTHNAME(STR_TO_DATE(month, '%m')) AS month_name,
+                      total_kw
+               FROM kw_aggregated_monthly
+               WHERE year = ?`;
     if (grid_id) {
-      mainWhere += ' AND g.grid_id = ?';
-      hierarchyParams.push(grid_id);
+      sql += ' AND grid_id = ?';
+      params.push(grid_id);
     }
-
-    const cte = `
-      WITH RankedReadings AS (
-        SELECT 
-          mr.meter_id,
-          MONTH(mr.reading_datetime) as read_month,
-          MONTHNAME(mr.reading_datetime) as read_month_name,
-          mr.current_reading,
-          ROW_NUMBER() OVER (PARTITION BY mr.meter_id, MONTH(mr.reading_datetime) ORDER BY mr.reading_datetime ASC) as rn_asc,
-          ROW_NUMBER() OVER (PARTITION BY mr.meter_id, MONTH(mr.reading_datetime) ORDER BY mr.reading_datetime DESC) as rn_desc
-        FROM meter_readings mr
-        JOIN power_meters pm ON mr.meter_id = pm.meter_id
-        JOIN areas a ON pm.area_id = a.area_id
-        JOIN buildings b ON a.building_id = b.building_id
-        JOIN grids g ON b.grid_id = g.grid_id
-        WHERE mr.reading_datetime >= ? AND mr.reading_datetime < ? ${mainWhere.replace('WHERE 1=1', '')}
-      )
-    `;
-    const query = `
-      ${cte}
-      SELECT
-        first_read.read_month AS month_num,
-        first_read.read_month_name AS month_name,
-        SUM(COALESCE(last_read.current_reading, 0) - COALESCE(first_read.current_reading, 0)) AS total_kw
-      FROM power_meters pm
-      JOIN areas a ON pm.area_id = a.area_id
-      JOIN buildings b ON a.building_id = b.building_id
-      JOIN grids g ON b.grid_id = g.grid_id
-      JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
-      JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1 AND first_read.read_month = last_read.read_month
-      ${mainWhere}
-      GROUP BY first_read.read_month, first_read.read_month_name
-      ORDER BY month_num
-    `;
-
-    const [rows] = await db.query(query, [...dateParams, ...hierarchyParams, ...hierarchyParams]);
+    sql += ' ORDER BY month_num';
+    const [rows] = await db.query(sql, params);
     res.json(rows);
   } catch (err) {
     console.error('API Error:', err.message);
     res.status(500).json({ error: 'Server Error: ' + err.message });
   }
 });
+
 
 app.get('/api/meter-readings', async (req, res) => {
   try {
@@ -1422,6 +1521,17 @@ app.delete('/api/settings/users/:id', async (req, res) => {
     res.json({ id: userId, status: 'inactive' });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Nightly aggregation of monthly grid kW totals at 11:59:59 AM
+cron.schedule('59 59 11 * * *', async () => {
+  try {
+    const currentYear = new Date().getFullYear();
+    await refreshMonthlyGridKwAggregation(currentYear);
+    console.log('[Cron] kw_aggregated_monthly refreshed for year', currentYear);
+  } catch (err) {
+    console.error('[Cron] aggregation error:', err);
   }
 });
 
