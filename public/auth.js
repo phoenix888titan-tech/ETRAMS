@@ -38,6 +38,16 @@
 
   
   let activeFetches = 0;
+  let fetchStartTime = null;
+  let loaderTimer = null;
+
+  function updateLoaderText() {
+    const textEl = document.getElementById('etrams-loader-text-el');
+    if (!textEl || !fetchStartTime) return;
+    const elapsed = Math.floor((Date.now() - fetchStartTime) / 1000);
+    textEl.textContent = elapsed > 0 ? `Loading report data...${elapsed}s` : 'Loading report data...';
+  }
+
   function updateGlobalLoader() {
     let loader = document.getElementById('etrams-global-loader');
     if (!loader) {
@@ -48,14 +58,31 @@
         loader.innerHTML = `
           <div class="etrams-loader-card">
             <div class="etrams-spinner"></div>
-            <div class="etrams-loader-text">Loading report data...</div>
+            <div class="etrams-loader-text" id="etrams-loader-text-el">Loading report data...</div>
           </div>
         `;
         container.appendChild(loader);
       }
     }
-    if (loader) {
-      loader.style.display = activeFetches > 0 ? 'flex' : 'none';
+
+    if (activeFetches > 0) {
+      if (!fetchStartTime) {
+        fetchStartTime = Date.now();
+      }
+      updateLoaderText();
+      if (!loaderTimer) {
+        loaderTimer = setInterval(updateLoaderText, 1000);
+      }
+      if (loader) loader.style.display = 'flex';
+    } else {
+      if (loaderTimer) {
+        clearInterval(loaderTimer);
+        loaderTimer = null;
+      }
+      fetchStartTime = null;
+      const textEl = document.getElementById('etrams-loader-text-el');
+      if (textEl) textEl.textContent = 'Loading report data...';
+      if (loader) loader.style.display = 'none';
     }
   }
 
