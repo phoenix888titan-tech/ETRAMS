@@ -1,11 +1,29 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const cors = require('cors');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const db = require('./db');
 const cron = require('node-cron');
 const rateLimit = require('express-rate-limit');
+
+const CRON_LOG_FILE = path.join(__dirname, 'logs', 'cron.log');
+
+function logCron(message) {
+  const timestamp = new Date().toISOString();
+  const line = `[${timestamp}] ${message}\n`;
+  console.log(`[Cron] ${message}`);
+  try {
+    const logDir = path.dirname(CRON_LOG_FILE);
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+    fs.appendFileSync(CRON_LOG_FILE, line, 'utf8');
+  } catch (err) {
+    console.error('Failed to write to cron log:', err.message);
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -161,47 +179,79 @@ app.get('/api/filters', async (req, res) => {
 });
 
 async function refreshMonthlyGridKwAggregation(targetYear) {
-  const dateParams = [`${targetYear}-01-01 00:00:00`, `${parseInt(targetYear) + 1}-01-01 00:00:00`];
-  const cte = `
-    WITH RankedReadings AS (
-      SELECT 
-        mr.meter_id,
-        MONTH(mr.reading_datetime) as read_month,
-        mr.current_reading,
-        ROW_NUMBER() OVER (PARTITION BY mr.meter_id, MONTH(mr.reading_datetime) ORDER BY mr.reading_datetime ASC) as rn_asc,
-        ROW_NUMBER() OVER (PARTITION BY mr.meter_id, MONTH(mr.reading_datetime) ORDER BY mr.reading_datetime DESC) as rn_desc
-      FROM meter_readings mr
-      JOIN power_meters pm ON mr.meter_id = pm.meter_id
+  logCron(`Starting monthly grid kW aggregation${targetYear ? ' for year ' + targetYear : ''}...`);
+  const t0 = Date.now();
+
+  const [monthRows] = await db.query(
+    `SELECT DISTINCT YEAR(reading_datetime) AS yr, MONTH(reading_datetime) AS mo 
+     FROM meter_readings 
+     WHERE reading_datetime IS NOT NULL 
+       ${targetYear ? 'AND YEAR(reading_datetime) = ?' : ''}
+     ORDER BY yr, mo`,
+    targetYear ? [targetYear] : []
+  );
+
+  if (monthRows.length === 0) {
+    logCron('No meter reading periods found to aggregate.');
+    return;
+  }
+
+  let totalUpdated = 0;
+  for (const { yr, mo } of monthRows) {
+    const start_dt = `${yr}-${String(mo).padStart(2, '0')}-01 00:00:00`;
+    const nextMonth = mo === 12 ? 1 : mo + 1;
+    const nextYear = mo === 12 ? yr + 1 : yr;
+    const end_dt = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01 00:00:00`;
+
+    const query = `
+      WITH RankedReadings AS (
+        SELECT 
+          mr.meter_id,
+          mr.current_reading,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime ASC) as rn_asc,
+          ROW_NUMBER() OVER (PARTITION BY mr.meter_id ORDER BY mr.reading_datetime DESC) as rn_desc
+        FROM meter_readings mr
+        WHERE mr.reading_datetime >= ? AND mr.reading_datetime < ?
+      ),
+      MeterBounds AS (
+        SELECT 
+          meter_id,
+          MAX(CASE WHEN rn_asc = 1 THEN current_reading END) as first_reading,
+          MAX(CASE WHEN rn_desc = 1 THEN current_reading END) as last_reading
+        FROM RankedReadings
+        WHERE rn_asc = 1 OR rn_desc = 1
+        GROUP BY meter_id
+      )
+      SELECT
+        g.grid_id AS grid_id,
+        g.grid_name AS grid_name,
+        ? AS year,
+        ? AS month,
+        SUM(COALESCE(mb.last_reading, 0) - COALESCE(mb.first_reading, 0)) AS total_kw
+      FROM power_meters pm
       JOIN areas a ON pm.area_id = a.area_id
       JOIN buildings b ON a.building_id = b.building_id
       JOIN grids g ON b.grid_id = g.grid_id
-      WHERE mr.reading_datetime >= ? AND mr.reading_datetime < ?
-    )
-  `;
-  const query = `
-    ${cte}
-    SELECT
-      g.grid_id AS grid_id,
-      ${targetYear} AS year,
-      first_read.read_month AS month,
-      SUM(COALESCE(last_read.current_reading,0) - COALESCE(first_read.current_reading,0)) AS total_kw
-    FROM power_meters pm
-    JOIN areas a ON pm.area_id = a.area_id
-    JOIN buildings b ON a.building_id = b.building_id
-    JOIN grids g ON b.grid_id = g.grid_id
-    JOIN RankedReadings first_read ON pm.meter_id = first_read.meter_id AND first_read.rn_asc = 1
-    JOIN RankedReadings last_read ON pm.meter_id = last_read.meter_id AND last_read.rn_desc = 1 AND first_read.read_month = last_read.read_month
+      JOIN MeterBounds mb ON pm.meter_id = mb.meter_id
+      GROUP BY g.grid_id, g.grid_name
+      ORDER BY g.grid_id
+    `;
 
-    GROUP BY g.grid_id, month
-  `;
-  // Insert or update aggregated rows
-  const [rows] = await db.query(query, [...dateParams, ...dateParams]);
-  for (const row of rows) {
-    await db.query(
-      `INSERT INTO kw_aggregated_monthly (grid_id, year, month, total_kw) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE total_kw = VALUES(total_kw), updated_at = CURRENT_TIMESTAMP`,
-      [row.grid_id, row.year, row.month, row.total_kw]
-    );
+    const [rows] = await db.query(query, [start_dt, end_dt, yr, mo]);
+    for (const row of rows) {
+      await db.query(
+        `INSERT INTO kw_aggregated_monthly (grid_id, year, month, total_kw) 
+         VALUES (?, ?, ?, ?) 
+         ON DUPLICATE KEY UPDATE total_kw = VALUES(total_kw), updated_at = CURRENT_TIMESTAMP`,
+        [row.grid_id, row.year, row.month, row.total_kw]
+      );
+      logCron(`  -> Year ${row.year}, Month ${row.month}: Grid ${row.grid_id} (${row.grid_name}) = ${parseFloat(row.total_kw).toFixed(2)} kW`);
+      totalUpdated++;
+    }
   }
+
+  const durationSec = ((Date.now() - t0) / 1000).toFixed(2);
+  logCron(`Aggregation completed in ${durationSec}s. Updated ${totalUpdated} grid-month records.`);
 }
 
 function isSpecificMeterType(val) {
@@ -1547,14 +1597,29 @@ app.delete('/api/settings/users/:id', async (req, res) => {
   }
 });
 
-// Nightly aggregation of monthly grid kW totals at 11:59:59 AM
-cron.schedule('59 59 11 * * *', async () => {
+// Nightly aggregation of monthly grid kW totals at 23:59:59 (11:59:59 PM)
+cron.schedule('59 59 23 * * *', async () => {
+  logCron('CRON TRIGGER: Nightly aggregation started (scheduled at 23:59:59)...');
   try {
     const currentYear = new Date().getFullYear();
     await refreshMonthlyGridKwAggregation(currentYear);
-    console.log('[Cron] kw_aggregated_monthly refreshed for year', currentYear);
+    logCron('CRON SUCCESS: Nightly aggregation finished successfully.');
   } catch (err) {
-    console.error('[Cron] aggregation error:', err);
+    logCron(`CRON ERROR: Nightly aggregation failed: ${err.message}\n${err.stack || ''}`);
+  }
+});
+
+// Endpoint to view recent cron logs (Admin only or via curl)
+app.get('/api/settings/cron-log', async (req, res) => {
+  try {
+    if (!fs.existsSync(CRON_LOG_FILE)) {
+      return res.json({ logs: 'No cron log file exists yet.' });
+    }
+    const content = fs.readFileSync(CRON_LOG_FILE, 'utf8');
+    const lines = content.trim().split('\n');
+    res.json({ logs: lines.slice(-100).join('\n') });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
